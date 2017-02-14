@@ -1252,6 +1252,60 @@ AC_HELP_STRING([--enable-video-fbcon], [use framebuffer console video driver [[d
     fi
 }
 
+dnl Find the bcmfb framebuffer console includes
+CheckBCMFB()
+{
+    AC_ARG_ENABLE(video-bcmfb,
+AC_HELP_STRING([--enable-video-bcmfb], [use framebuffer console video driver [[default=yes]]]),
+                  , enable_video_bcmfb=yes)
+    if test x$enable_video = xyes -a x$enable_video_bcmfb = xyes; then
+        AC_MSG_CHECKING(for framebuffer console support)
+        video_bcmfb=no
+        AC_TRY_COMPILE([
+         #include <linux/fb.h>
+         #include <linux/kd.h>
+         #include <linux/keyboard.h>
+        ],[
+        ],[
+        video_bcmfb=yes
+        ])
+        AC_MSG_RESULT($video_bcmfb)
+        if test x$video_bcmfb = xyes; then
+            AC_CHECK_FUNCS(getpagesize)
+            AC_DEFINE(SDL_VIDEO_DRIVER_BCMFB)
+            SOURCES="$SOURCES $srcdir/src/video/bcmfb/*.c"
+            have_video=yes
+        fi
+    fi
+}
+
+dnl Find the bcmfb framebuffer console includes
+CheckBCMFB()
+{
+    AC_ARG_ENABLE(video-bcmfb,
+AC_HELP_STRING([--enable-video-bcmfb], [use framebuffer console video driver [[default=yes]]]),
+                  , enable_video_bcmfb=yes)
+    if test x$enable_video = xyes -a x$enable_video_bcmfb = xyes; then
+        AC_MSG_CHECKING(for framebuffer console support)
+        video_bcmfb=no
+        AC_TRY_COMPILE([
+         #include <linux/fb.h>
+         #include <linux/kd.h>
+         #include <linux/keyboard.h>
+        ],[
+        ],[
+        video_bcmfb=yes
+        ])
+        AC_MSG_RESULT($video_bcmfb)
+        if test x$video_bcmfb = xyes; then
+            AC_CHECK_FUNCS(getpagesize)
+            AC_DEFINE(SDL_VIDEO_DRIVER_BCMFB)
+            SOURCES="$SOURCES $srcdir/src/video/bcmfb/*.c"
+            have_video=yes
+        fi
+    fi
+}
+
 dnl Find DirectFB
 CheckDirectFB()
 {
@@ -2363,6 +2417,7 @@ case "$host" in
         CheckX11
         CheckNANOX
         CheckFBCON
+        CheckBCMFB
         CheckDirectFB
         CheckPS2GS
         CheckPS3
