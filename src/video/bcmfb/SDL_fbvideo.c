@@ -382,6 +382,37 @@ static int BCMFB_CheckMode(_THIS, struct fb_var_screeninfo *vinfo,
 	vinfo->yres = *h;
 	vinfo->yres_virtual = *h;
 	vinfo->activate = FB_ACTIVATE_TEST;
+	switch(vinfo->bits_per_pixel) {
+		case 32:
+			vinfo->transp.offset = 0;
+			vinfo->transp.length = 8;
+			vinfo->red.offset = 8;
+			vinfo->red.length = 8;
+			vinfo->green.offset = 16;
+			vinfo->green.length = 8;
+			vinfo->blue.offset = 24;
+			vinfo->blue.length = 8;
+			break;
+		case 24:
+			vinfo->transp.offset = 0;
+			vinfo->transp.length = 0;
+			vinfo->red.offset = 0;
+			vinfo->red.length = 8;
+			vinfo->green.offset = 8;
+			vinfo->green.length = 8;
+			vinfo->blue.offset = 16;
+			vinfo->blue.length = 8;
+			break;
+		case 8:
+			vinfo->transp.offset = 0;
+			vinfo->transp.length = 0;
+			vinfo->red.offset = 0;
+			vinfo->red.length = 3;
+			vinfo->green.offset = 3;
+			vinfo->green.length = 3;
+			vinfo->blue.offset = 4;
+			vinfo->blue.length = 2;
+	}
 	if ( ioctl(console_fd, FBIOPUT_VSCREENINFO, vinfo) == 0 ) {
 #ifdef BCMFB_DEBUG
 		fprintf(stderr, "Checked mode %dx%d at %d bpp, got mode %dx%d at %d bpp\n", *w, *h, (index+1)*8, vinfo->xres, vinfo->yres, vinfo->bits_per_pixel);
@@ -579,6 +610,10 @@ static int BCMFB_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	if ( vformat->BitsPerPixel < 8 ) {
 		/* Assuming VGA16, we handle this via a shadow framebuffer */
 		vformat->BitsPerPixel = 8;
+	}
+	for ( i=0; i<vinfo.transp.length; ++i ) {
+		vformat->Amask <<= 1;
+		vformat->Amask |= (0x00000001<<vinfo.transp.offset);
 	}
 	for ( i=0; i<vinfo.red.length; ++i ) {
 		vformat->Rmask <<= 1;
@@ -863,20 +898,9 @@ static int choose_bcmfb_mode(struct fb_var_screeninfo *vinfo)
 		if ( (vinfo->xres == BCMFB_timings[i].xres) &&
 		     (vinfo->yres == BCMFB_timings[i].yres) ) {
 #ifdef BCMFB_DEBUG
-			fprintf(stderr, "BCMFB using timings for %dx%d\n",
+			fprintf(stderr, "BCMFB using %dx%d\n",
 						vinfo->xres, vinfo->yres);
 #endif
-			if ( BCMFB_timings[i].pixclock ) {
-				vinfo->pixclock = BCMFB_timings[i].pixclock;
-			}
-			vinfo->left_margin = BCMFB_timings[i].left;
-			vinfo->right_margin = BCMFB_timings[i].right;
-			vinfo->upper_margin = BCMFB_timings[i].upper;
-			vinfo->lower_margin = BCMFB_timings[i].lower;
-			vinfo->hsync_len = BCMFB_timings[i].hslen;
-			vinfo->vsync_len = BCMFB_timings[i].vslen;
-			vinfo->sync = BCMFB_timings[i].sync;
-			vinfo->vmode = BCMFB_timings[i].vmode;
 			matched = 1;
 			break;
 		}
@@ -893,6 +917,7 @@ static SDL_Surface *BCMFB_SetVideoMode(_THIS, SDL_Surface *current,
 	Uint32 Rmask;
 	Uint32 Gmask;
 	Uint32 Bmask;
+	Uint32 Amask;
 	char *surfaces_mem;
 	int surfaces_len;
 
@@ -933,10 +958,37 @@ static SDL_Surface *BCMFB_SetVideoMode(_THIS, SDL_Surface *current,
 		}
 		vinfo.xoffset = 0;
 		vinfo.yoffset = 0;
-		vinfo.red.length = vinfo.red.offset = 0;
-		vinfo.green.length = vinfo.green.offset = 0;
-		vinfo.blue.length = vinfo.blue.offset = 0;
-		vinfo.transp.length = vinfo.transp.offset = 0;
+		switch(vinfo.bits_per_pixel) {
+			case 32:
+				vinfo.transp.offset = 0;
+				vinfo.transp.length = 8;
+				vinfo.red.offset = 8;
+				vinfo.red.length = 8;
+				vinfo.green.offset = 16;
+				vinfo.green.length = 8;
+				vinfo.blue.offset = 24;
+				vinfo.blue.length = 8;
+				break;
+			case 24:
+				vinfo.transp.offset = 0;
+				vinfo.transp.length = 0;
+				vinfo.red.offset = 0;
+				vinfo.red.length = 8;
+				vinfo.green.offset = 8;
+				vinfo.green.length = 8;
+				vinfo.blue.offset = 16;
+				vinfo.blue.length = 8;
+				break;
+			case 8:
+				vinfo.transp.offset = 0;
+				vinfo.transp.length = 0;
+				vinfo.red.offset = 0;
+				vinfo.red.length = 3;
+				vinfo.green.offset = 3;
+				vinfo.green.length = 3;
+				vinfo.blue.offset = 4;
+				vinfo.blue.length = 2;
+		}
 		if ( ! choose_bcmfb_conf_mode(&vinfo) ) {
 			choose_bcmfb_mode(&vinfo);
 		}
@@ -954,8 +1006,6 @@ static SDL_Surface *BCMFB_SetVideoMode(_THIS, SDL_Surface *current,
 		}
 	} else {
 		int maxheight;
-
-		/* Figure out how much video memory is available */
 		if ( flags & SDL_DOUBLEBUF ) {
 			maxheight = height*2;
 		} else {
@@ -970,6 +1020,11 @@ static SDL_Surface *BCMFB_SetVideoMode(_THIS, SDL_Surface *current,
 	fprintf(stderr, "BCMFB actual vinfo:\n");
 	print_vinfo(&vinfo);
 #endif
+	Amask = 0;
+	for ( i=0; i<vinfo.transp.length; ++i ) {
+		Amask <<= 1;
+		Amask |= (0x00000001<<vinfo.transp.offset);
+	}
 	Rmask = 0;
 	for ( i=0; i<vinfo.red.length; ++i ) {
 		Rmask <<= 1;
@@ -986,7 +1041,7 @@ static SDL_Surface *BCMFB_SetVideoMode(_THIS, SDL_Surface *current,
 		Bmask |= (0x00000001<<vinfo.blue.offset);
 	}
 	if ( ! SDL_ReallocFormat(current, vinfo.bits_per_pixel,
-	                                  Rmask, Gmask, Bmask, 0) ) {
+	                                  Rmask, Gmask, Bmask, Amask) ) {
 		return(NULL);
 	}
 
