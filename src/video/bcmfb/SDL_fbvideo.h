@@ -62,7 +62,6 @@ struct SDL_PrivateVideoData {
 	char *accel_mem;
 	char *shadow_mem;
 	int mapped_memlen;
-	int mapped_offset;
 	int accel_offset;
 	int accel_memlen;
 	int flip_page;

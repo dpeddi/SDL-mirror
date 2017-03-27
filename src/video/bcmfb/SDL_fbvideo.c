@@ -33,11 +33,6 @@
 //#define BCMFB_DEBUG
 #define BCMFB_ACCEL_DEBUG
 
-#ifndef FBIO_BLIT
-#define FBIO_SET_MANUAL_BLIT _IOW('F', 0x21, __u8)
-#define FBIO_BLIT 0x22
-#endif
-
 /* A list of video resolutions that we query for (sorted largest to smallest) */
 static const SDL_Rect checkres[] = {
 	{  0, 0,  1920, 1080 },		// bcmfb
@@ -590,27 +585,7 @@ static int BCMFB_VideoInit(_THIS, SDL_PixelFormat *vformat)
 		bcmfb_accel = "0";
 	}
 
-	/* Memory map the device, compensating for buggy PPC mmap() */
-	mapped_offset = (((long)finfo.smem_start) -
-	                (((long)finfo.smem_start)&~(pagesize-1)));
-	mapped_memlen = finfo.smem_len+mapped_offset;
-	mapped_mem = do_mmap(NULL, mapped_memlen,
-	                  PROT_READ|PROT_WRITE, MAP_SHARED, console_fd, 0);
-	if ( mapped_mem == (char *)-1 ) {
-		SDL_SetError("Unable to memory map the video hardware");
-		mapped_mem = NULL;
-		BCMFB_VideoQuit(this);
-		return(-1);
-	}
-	else {
-		unsigned char x=1;
-		ioctl(console_fd, FBIO_SET_MANUAL_BLIT, &x);
-	}
-#ifdef BCMFB_DEBUG
-	printf("VIDEO MEM          : 0x%8x (%dMB)\n", finfo.smem_len, (finfo.smem_len/1024/1024));
-	printf("BCMFB I/O          : %p\n", mapped_mem);
-	printf("BCMFB MEM size     : 0x%8x (%dMB)\n", mapped_memlen, (mapped_memlen/1024/1024));
-#endif
+	mapped_memlen = finfo.smem_len;
 
 	/* Determine the current screen depth */
 	if ( ioctl(console_fd, FBIOGET_VSCREENINFO, &vinfo) < 0 ) {
@@ -950,6 +925,9 @@ static SDL_Surface *BCMFB_SetVideoMode(_THIS, SDL_Surface *current,
 
 	if ( (vinfo.xres != width) || (vinfo.yres != height) ||
 	     (vinfo.bits_per_pixel != bpp) || (flags & SDL_DOUBLEBUF) ) {
+#ifdef BCMFB_DEBUG
+	fprintf(stderr, "BCMFB changing vinfo...\n");
+#endif
 		vinfo.activate = FB_ACTIVATE_NOW;
 		vinfo.accel_flags = 0;
 		vinfo.bits_per_pixel = bpp;
@@ -1065,6 +1043,23 @@ static SDL_Surface *BCMFB_SetVideoMode(_THIS, SDL_Surface *current,
 		SDL_SetError("BCMFB couldn't get console hardware info");
 		return(NULL);
 	}
+	
+	mapped_memlen = finfo.smem_len;
+	mapped_mem = do_mmap(NULL, mapped_memlen,
+	                  PROT_READ|PROT_WRITE, MAP_SHARED, console_fd, 0);
+	if ( mapped_mem == (char *)-1 ) {
+		SDL_SetError("Unable to memory map the video hardware");
+		mapped_mem = NULL;
+		BCMFB_VideoQuit(this);
+		return(-1);
+	}
+	
+	mapped_mem += vinfo.yoffset * finfo.line_length;
+
+#ifdef BCMFB_DEBUG
+	printf("VIDEO MEM          : 0x%8x (%dMB)\n", finfo.smem_len, (finfo.smem_len/1024/1024));
+	printf("BCMFB I/O          : %p\n", mapped_mem);
+#endif
 
 	/* Save hardware palette, if needed */
 	BCMFB_SavePalette(this, &finfo, &vinfo);
@@ -1104,7 +1099,7 @@ static SDL_Surface *BCMFB_SetVideoMode(_THIS, SDL_Surface *current,
 		physlinebytes = finfo.line_length;
 	} else {
 		current->pitch = finfo.line_length;
-		current->pixels = mapped_mem+mapped_offset;
+		current->pixels = mapped_mem;
 	}
 	
 	/* Set up the information for hardware surfaces */
@@ -1138,7 +1133,7 @@ static SDL_Surface *BCMFB_SetVideoMode(_THIS, SDL_Surface *current,
 			this->screen = NULL;
 		}
 	}
-	
+#if 0
 	/* Set the accel mem */
 	accel_memlen = current->h*current->pitch;
 	accel_offset = (mapped_memlen/accel_memlen - 1) * accel_memlen;
@@ -1150,6 +1145,7 @@ static SDL_Surface *BCMFB_SetVideoMode(_THIS, SDL_Surface *current,
 	printf("BCMFB_ACCEL_OFFSET : 0x%8x (%dMB)\n", accel_offset, (accel_offset/1024/1024));
 #endif
 
+#endif
 	/* Set the update rectangle function */
 	this->UpdateRects = BCMFB_DirectUpdate;
 
@@ -1481,9 +1477,6 @@ static void BCMFB_DirectUpdate(_THIS, int numrects, SDL_Rect *rects)
 {
 	//fprintf(stderr, "BCMFB_DirectUpdate\n");
 	if (!shadow_fb) {
-		/* init blit */
-		//fprintf(stderr,">> BCMFB_DirectUpdate blit");
-		ioctl(console_fd, FBIO_BLIT);
 		/* The application is already updating the visible video memory */
 		return;
 	}
@@ -1581,7 +1574,7 @@ static void BCMFB_DirectUpdate(_THIS, int numrects, SDL_Rect *rects)
 
 		src_start = shadow_mem +
 			(sha_y1 * width + sha_x1) * bytes_per_pixel;
-		dst_start = mapped_mem + mapped_offset + scr_y1 * physlinebytes + 
+		dst_start = mapped_mem + scr_y1 * physlinebytes + 
 			scr_x1 * bytes_per_pixel;
 			
 		blitFunc((Uint8 *) src_start,
@@ -1776,8 +1769,6 @@ static void BCMFB_VideoQuit(_THIS)
 
 	/* Close console and input file descriptors */
 	if ( console_fd > 0 ) {
-		unsigned char x=0;
-		ioctl(console_fd, FBIO_SET_MANUAL_BLIT, &x);
 		/* Unmap the video framebuffer and I/O registers */
 		if ( mapped_mem ) {
 			munmap(mapped_mem, mapped_memlen);
