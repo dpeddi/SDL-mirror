@@ -959,6 +959,7 @@ static SDL_Surface *BCMFB_SetVideoMode(_THIS, SDL_Surface *current,
 		vinfo.height = 0;
 		vinfo.xoffset = 0;
 		vinfo.yoffset = 0;
+		vinfo.grayscale = 0;
 		switch(vinfo.bits_per_pixel) {
 			case 32:
 				vinfo.transp.offset = 0;
