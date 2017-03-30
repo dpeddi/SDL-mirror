@@ -157,7 +157,7 @@ testgles$(EXE): $(srcdir)/testgles.c
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS) @GLESLIB@ @MATHLIB@
 
 testgles2$(EXE): $(srcdir)/testgles2.c
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS) @MATHLIB@
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS) @GLES2LIB@ @MATHLIB@
 
 testhaptic$(EXE): $(srcdir)/testhaptic.c
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
