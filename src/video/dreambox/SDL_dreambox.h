@@ -29,7 +29,6 @@
 
 #include <GLES/egl.h>
 
-#include *
 #include "../../SDL_internal.h"
 #include "../SDL_sysvideo.h"
 #include "../SDL_egl_c.h"
