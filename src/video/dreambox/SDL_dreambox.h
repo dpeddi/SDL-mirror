@@ -107,13 +107,9 @@ SDL_bool DREAM_GetWindowWMInfo(_THIS, SDL_Window * window,
 
 /* OpenGL/OpenGL ES functions */
 int DREAM_GL_LoadLibrary(_THIS, const char *path);
-void *DREAM_GL_GetProcAddress(_THIS, const char *proc);
 SDL_GLContext DREAM_GL_CreateContext(_THIS, SDL_Window * window);
 int DREAM_GL_MakeCurrent(_THIS, SDL_Window * window, SDL_GLContext context);
-int DREAM_GL_SetSwapInterval(_THIS, int interval);
-int DREAM_GL_GetSwapInterval(_THIS);
 int DREAM_GL_SwapWindow(_THIS, SDL_Window * window);
-void DREAM_GL_DeleteContext(_THIS, SDL_GLContext context);
 
 #endif /* SDL_VIDEO_DRIVER_DREAMBOX && SDL_VIDEO_OPENGL_EGL */
 
