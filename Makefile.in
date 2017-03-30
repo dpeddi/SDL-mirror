@@ -153,6 +153,7 @@ $(objects)/$(SDLMAIN_TARGET): $(SDLMAIN_OBJECTS)
 $(objects)/$(SDLTEST_TARGET): $(SDLTEST_OBJECTS)
 	$(RUN_CMD_AR)$(AR) cru $@ $(SDLTEST_OBJECTS)
 	$(RUN_CMD_RANLIB)$(RANLIB) $@
+	$(RUN_CMD_LTLINK)$(LIBTOOL) --tag=CC --mode=link $(CC) -o $@ $(SDLTEST_OBJECTS) $(LDFLAGS) $(EXTRA_LDFLAGS) $(LT_LDFLAGS)
 
 install: all install-bin install-hdrs install-lib install-data
 install-bin:
