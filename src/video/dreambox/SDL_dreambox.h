@@ -33,7 +33,7 @@
 #include "../SDL_sysvideo.h"
 #include "../SDL_egl_c.h"
 
-#define DREAM_gl_getprocaddres SDL_EGL_GetProcAddress
+#define DREAM_GL_GetProcAddress SDL_EGL_GetProcAddress
 
 typedef struct SDL_VideoData
 {
@@ -69,44 +69,44 @@ typedef struct SDL_WindowData
 /****************************************************************************/
 
 /* Display helper functions */
-void DREAM_setfbresolution(int width, int height);
-void DREAM_setvideomode(const char *mode);
-void DREAM_waitforsync();
+void DREAM_SetFramebufferResolution(int width, int height);
+void DREAM_SetVideomode(const char *mode);
+void DREAM_WaitForSync();
 
 /* Display and window functions */
-int DREAM_videoinit(_THIS);
-void DREAM_videoquit(_THIS);
-void DREAM_getdisplaymodes(_THIS, SDL_VideoDisplay * display);
-int DREAM_setdisplaymode(_THIS, SDL_VideoDisplay * display, SDL_DisplayMode * mode);
-int DREAM_createwindow(_THIS, SDL_Window * window);
-int DREAM_createwindowfrom(_THIS, SDL_Window * window, const void *data);
-void DREAM_setwindowtitle(_THIS, SDL_Window * window);
-void DREAM_setwindowicon(_THIS, SDL_Window * window, SDL_Surface * icon);
-void DREAM_setwindowposition(_THIS, SDL_Window * window);
-void DREAM_setwindowsize(_THIS, SDL_Window * window);
-void DREAM_showwindow(_THIS, SDL_Window * window);
-void DREAM_hidewindow(_THIS, SDL_Window * window);
-void DREAM_raisewindow(_THIS, SDL_Window * window);
-void DREAM_maximizewindow(_THIS, SDL_Window * window);
-void DREAM_minimizewindow(_THIS, SDL_Window * window);
-void DREAM_restorewindow(_THIS, SDL_Window * window);
-void DREAM_setwindowgrab(_THIS, SDL_Window * window, SDL_bool grabbed);
-void DREAM_destroywindow(_THIS, SDL_Window * window);
+int DREAM_VideoInit(_THIS);
+void DREAM_VideoQuit(_THIS);
+void DREAM_GetDisplayModes(_THIS, SDL_VideoDisplay * display);
+int DREAM_SetDisplayMode(_THIS, SDL_VideoDisplay * display, SDL_DisplayMode * mode);
+int DREAM_CreateWindow(_THIS, SDL_Window * window);
+int DREAM_CreateWindowfrom(_THIS, SDL_Window * window, const void *data);
+void DREAM_SetWindowTitle(_THIS, SDL_Window * window);
+void DREAM_SetWindowIcon(_THIS, SDL_Window * window, SDL_Surface * icon);
+void DREAM_SetWindowPosition(_THIS, SDL_Window * window);
+void DREAM_SetWindowSize(_THIS, SDL_Window * window);
+void DREAM_ShowWindow(_THIS, SDL_Window * window);
+void DREAM_HideWindow(_THIS, SDL_Window * window);
+void DREAM_RaiseWindow(_THIS, SDL_Window * window);
+void DREAM_MaximizeWindow(_THIS, SDL_Window * window);
+void DREAM_MinimizeWindow(_THIS, SDL_Window * window);
+void DREAM_RestoreWindow(_THIS, SDL_Window * window);
+void DREAM_SetWindowGrab(_THIS, SDL_Window * window, SDL_bool grabbed);
+void DREAM_DestroyWindow(_THIS, SDL_Window * window);
 
 /* Window manager function */
-SDL_bool DREAM_getwindowwminfo(_THIS, SDL_Window * window,
+SDL_bool DREAM_GetWindowWMInfo(_THIS, SDL_Window * window,
                              struct SDL_SysWMinfo *info);
 
 /* OpenGL/OpenGL ES functions */
-int DREAM_gl_loadlibrary(_THIS, const char *path);
-void *DREAM_gl_getprocaddres(_THIS, const char *proc);
-void DREAM_gl_unloadlibrary(_THIS);
-SDL_GLContext DREAM_gl_createcontext(_THIS, SDL_Window * window);
-int DREAM_gl_makecurrent(_THIS, SDL_Window * window, SDL_GLContext context);
-int DREAM_gl_setswapinterval(_THIS, int interval);
-int DREAM_gl_getswapinterval(_THIS);
-int DREAM_gl_swapwindow(_THIS, SDL_Window * window);
-void DREAM_gl_deletecontext(_THIS, SDL_GLContext context);
+int DREAM_GL_LoadLibrary(_THIS, const char *path);
+void *DREAM_GL_GetProcAddress(_THIS, const char *proc);
+void DREAM_GL_UnloadLibrary(_THIS);
+SDL_GLContext DREAM_GL_CreateContext(_THIS, SDL_Window * window);
+int DREAM_GL_MakeCurrent(_THIS, SDL_Window * window, SDL_GLContext context);
+int DREAM_GL_SetSwapInterval(_THIS, int interval);
+int DREAM_GL_GetSwapInterval(_THIS);
+int DREAM_GL_SwapWindow(_THIS, SDL_Window * window);
+void DREAM_GL_DeleteContext(_THIS, SDL_GLContext context);
 
 #endif /* SDL_VIDEO_DRIVER_DREAMBOX && SDL_VIDEO_OPENGL_EGL */
 
