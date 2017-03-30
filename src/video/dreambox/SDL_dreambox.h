@@ -25,10 +25,16 @@
 #ifndef __SDL_DREAMBOX_H__
 #define __SDL_DREAMBOX_H__
 
+#if SDL_VIDEO_DRIVER_DREAMBOX && SDL_VIDEO_OPENGL_EGL
+
 #include <GLES/egl.h>
 
+#include *
 #include "../../SDL_internal.h"
 #include "../SDL_sysvideo.h"
+#include "../SDL_egl_c.h"
+
+#define DREAM_gl_getprocaddres SDL_EGL_GetProcAddress
 
 typedef struct SDL_VideoData
 {
@@ -103,6 +109,7 @@ int DREAM_gl_getswapinterval(_THIS);
 int DREAM_gl_swapwindow(_THIS, SDL_Window * window);
 void DREAM_gl_deletecontext(_THIS, SDL_GLContext context);
 
+#endif /* SDL_VIDEO_DRIVER_DREAMBOX && SDL_VIDEO_OPENGL_EGL */
 
 #endif /* __SDL_DREAMBOX_H__ */
 

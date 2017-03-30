@@ -23,7 +23,7 @@
 */
 #include "../../SDL_internal.h"
 
-#if SDL_VIDEO_DRIVER_DREAMBOX
+#if SDL_VIDEO_DRIVER_DREAMBOX && SDL_VIDEO_OPENGL_EGL
 
 /* SDL internals */
 #include "../SDL_sysvideo.h"
@@ -39,7 +39,6 @@
 #include <fcntl.h>
 #include <linux/fb.h>
 #include <sys/ioctl.h>
-#include "EGL/egl.h"
 #include "GLES2/gl2.h"
 
 #define DREAMBOX_DEBUG
@@ -486,6 +485,7 @@ DREAM_gl_loadlibrary(_THIS, const char *path)
 	return ret;
 }
 
+#if 0
 void *
 DREAM_gl_getprocaddres(_THIS, const char *proc)
 {
@@ -494,6 +494,7 @@ DREAM_gl_getprocaddres(_THIS, const char *proc)
 #endif
 	return NULL;
 }
+#endif
 
 void
 DREAM_gl_unloadlibrary(_THIS)
@@ -932,6 +933,6 @@ DREAM_gl_deletecontext(_THIS, SDL_GLContext context)
 	return;
 }
 
-#endif /* SDL_VIDEO_DRIVER_DREAMBOX */
+#endif /* SDL_VIDEO_DRIVER_DREAMBOX && SDL_VIDEO_OPENGL_EGL */
 
 /* vi: set ts=4 sw=4 expandtab: */
