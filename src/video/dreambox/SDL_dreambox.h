@@ -27,13 +27,21 @@
 
 #if SDL_VIDEO_DRIVER_DREAMBOX && SDL_VIDEO_OPENGL_EGL
 
-#include <GLES/egl.h>
+#include <GLES/gl.h>
+#include <GLES2/gl2.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
 
 #include "../../SDL_internal.h"
 #include "../SDL_sysvideo.h"
 #include "../SDL_egl_c.h"
 
+#define DREAM_GL_GetAttribute SDL_EGL_GetAttribute
 #define DREAM_GL_GetProcAddress SDL_EGL_GetProcAddress
+#define DREAM_GL_UnloadLibrary SDL_EGL_UnloadLibrary
+#define DREAM_GL_SetSwapInterval SDL_EGL_SetSwapInterval
+#define DREAM_GL_GetSwapInterval SDL_EGL_GetSwapInterval
+#define DREAM_GL_DeleteContext SDL_EGL_DeleteContext
 
 typedef struct SDL_VideoData
 {
@@ -100,7 +108,6 @@ SDL_bool DREAM_GetWindowWMInfo(_THIS, SDL_Window * window,
 /* OpenGL/OpenGL ES functions */
 int DREAM_GL_LoadLibrary(_THIS, const char *path);
 void *DREAM_GL_GetProcAddress(_THIS, const char *proc);
-void DREAM_GL_UnloadLibrary(_THIS);
 SDL_GLContext DREAM_GL_CreateContext(_THIS, SDL_Window * window);
 int DREAM_GL_MakeCurrent(_THIS, SDL_Window * window, SDL_GLContext context);
 int DREAM_GL_SetSwapInterval(_THIS, int interval);

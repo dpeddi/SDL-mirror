@@ -22,8 +22,15 @@
 *  Copyright (C) 2017 Emanuel Strobel
 */
 
+#ifndef __SDL_DREAMBOX_EVENT_H__
+#define __SDL_DREAMBOX_EVENT_H__
+
 #include "../../SDL_internal.h"
 
 extern void DREAM_PumpEvents(_THIS);
+extern void DREAM_EventInit(_THIS);
+extern void DREAM_EventQuit(_THIS);
+
+#endif
 
 /* vi: set ts=4 sw=4 expandtab: */

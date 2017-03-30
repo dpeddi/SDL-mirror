@@ -28,16 +28,19 @@
 /* Being a null driver, there's no event stream. We just define stubs for
    most of the API. */
 
+#include "../../events/SDL_sysevents.h"
 #include "../../events/SDL_events_c.h"
+#include "../../events/SDL_keyboard_c.h"
 
-//#define DREAMBOX_DEBUG
+#ifdef SDL_INPUT_LINUXEV
+#include "../../core/linux/SDL_evdev.h"
+#endif
 
 void
 DREAM_PumpEvents(_THIS)
 {
-    /* Not implemented. */
-#ifdef DREAMBOX_DEBUG
-	fprintf(stderr, "DREAMBOX: PumpEvents\n");
+#ifdef SDL_INPUT_LINUXEV
+    SDL_EVDEV_Poll();
 #endif
 }
 
