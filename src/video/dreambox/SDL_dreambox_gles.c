@@ -29,6 +29,8 @@
 #include "SDL_dreambox.h"
 #include "SDL_dreambox_gles.h"
 
+#define DREAMBOX_DEBUG
+
 /* Being a null driver, there's no event stream. We just define stubs for
    most of the API. */
 
@@ -90,38 +92,29 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 
 	/* Prepare attributes list to pass them to OpenGL ES */
 	attr_pos = 0;
+
 	wdata->gles_attributes[attr_pos++] = EGL_SURFACE_TYPE;
-	wdata->gles_attributes[attr_pos++] = EGL_WINDOW_BIT;
+	wdata->gles_attributes[attr_pos++] = EGL_KHR_surfaceless_context ? EGL_DONT_CARE : EGL_PBUFFER_BIT;
 	wdata->gles_attributes[attr_pos++] = EGL_RED_SIZE;
-	wdata->gles_attributes[attr_pos++] = _this->gl_config.red_size;
+	wdata->gles_attributes[attr_pos++] = 8;
 	wdata->gles_attributes[attr_pos++] = EGL_GREEN_SIZE;
-	wdata->gles_attributes[attr_pos++] = _this->gl_config.green_size;
+	wdata->gles_attributes[attr_pos++] = 8;
 	wdata->gles_attributes[attr_pos++] = EGL_BLUE_SIZE;
-	wdata->gles_attributes[attr_pos++] = _this->gl_config.blue_size;
+	wdata->gles_attributes[attr_pos++] = 8;
 	wdata->gles_attributes[attr_pos++] = EGL_ALPHA_SIZE;
-
-	/* Setup alpha size in bits */
-	if (_this->gl_config.alpha_size) {
-		wdata->gles_attributes[attr_pos++] = _this->gl_config.alpha_size;
-	} else {
-		wdata->gles_attributes[attr_pos++] = EGL_DONT_CARE;
-	}
-
-	/* Setup color buffer size */
-	if (_this->gl_config.buffer_size) {
-		wdata->gles_attributes[attr_pos++] = EGL_BUFFER_SIZE;
-		wdata->gles_attributes[attr_pos++] = _this->gl_config.buffer_size;
-	} else {
-		wdata->gles_attributes[attr_pos++] = EGL_BUFFER_SIZE;
-		wdata->gles_attributes[attr_pos++] = EGL_DONT_CARE;
-	}
-
-	/* Setup depth buffer bits */
+	wdata->gles_attributes[attr_pos++] = 8;
 	wdata->gles_attributes[attr_pos++] = EGL_DEPTH_SIZE;
-	wdata->gles_attributes[attr_pos++] = _this->gl_config.depth_size;
-
+	wdata->gles_attributes[attr_pos++] = 24;
+	wdata->gles_attributes[attr_pos++] = EGL_BUFFER_SIZE;
+	wdata->gles_attributes[attr_pos++] = EGL_DONT_CARE;
+	wdata->gles_attributes[attr_pos++] = EGL_RENDERABLE_TYPE;
+	wdata->gles_attributes[attr_pos++] = EGL_OPENGL_ES2_BIT;
+	
 	/* Setup stencil bits */
 	if (_this->gl_config.stencil_size) {
+#ifdef DREAMBOX_DEBUG
+		fprintf(stderr, "DREAM: GL_CreateContext found stencil_size: %d\n", _this->gl_config.buffer_size);
+#endif
 		wdata->gles_attributes[attr_pos++] = EGL_STENCIL_SIZE;
 		wdata->gles_attributes[attr_pos++] = _this->gl_config.buffer_size;
 	} else {
@@ -131,6 +124,9 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 
 	/* Set number of samples in multisampling */
 	if (_this->gl_config.multisamplesamples) {
+#ifdef DREAMBOX_DEBUG
+		fprintf(stderr, "DREAM: GL_CreateContext found multisamplesamples: %d\n", _this->gl_config.multisamplesamples);
+#endif
 		wdata->gles_attributes[attr_pos++] = EGL_SAMPLES;
 		wdata->gles_attributes[attr_pos++] =
 			_this->gl_config.multisamplesamples;
@@ -138,6 +134,9 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 
 	/* Multisample buffers, OpenGL ES 1.0 spec defines 0 or 1 buffer */
 	if (_this->gl_config.multisamplebuffers) {
+#ifdef DREAMBOX_DEBUG
+		fprintf(stderr, "DREAM: GL_CreateContext found multisamplebuffers: %d\n", _this->gl_config.multisamplebuffers);
+#endif
 		wdata->gles_attributes[attr_pos++] = EGL_SAMPLE_BUFFERS;
 		wdata->gles_attributes[attr_pos++] =
 			_this->gl_config.multisamplebuffers;
@@ -227,7 +226,9 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 			return NULL;
 		}
 	}
-
+#ifdef DREAMBOX_DEBUG
+	fprintf(stderr, "DREAM: GL_CreateContext now configs=%d\n", configs);
+#endif
 	/* Initialize config index */
 	wdata->gles_config = 0;
 
@@ -277,6 +278,9 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 	if (cit == configs) {
 		cit = 0;
 	}
+#ifdef DREAMBOX_DEBUG
+	fprintf(stderr, "DREAM: GL_CreateContext now cit=%d\n", cit);
+#endif
 	wdata->gles_config = cit;
 
 	/* Create OpenGL ES context */
@@ -318,12 +322,15 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 	_this->gl_config.stereo = 0;
 
 	/* Get back samples and samplebuffers configurations. Rest framebuffer */
-	/* parameters could be obtained through the OpenGL ES API				*/
+	/* parameters could be obtained through the OpenGL ES API */
 	status =
 		eglGetConfigAttrib(phdata->egl_display,
 			wdata->gles_configs[wdata->gles_config],
 			EGL_SAMPLES, &attr_value);
 	if (status == EGL_TRUE) {
+#ifdef DREAMBOX_DEBUG
+		fprintf(stderr, "DREAM: GL_CreateContext now multisamplesamples=%d\n", attr_value);
+#endif
 		_this->gl_config.multisamplesamples = attr_value;
 	}
 	status =
@@ -331,6 +338,9 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 			wdata->gles_configs[wdata->gles_config],
 			EGL_SAMPLE_BUFFERS, &attr_value);
 	if (status == EGL_TRUE) {
+#ifdef DREAMBOX_DEBUG
+		fprintf(stderr, "DREAM: GL_CreateContext now multisamplebuffers=%d\n", attr_value);
+#endif
 		_this->gl_config.multisamplebuffers = attr_value;
 	}
 
@@ -340,6 +350,9 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 			wdata->gles_configs[wdata->gles_config],
 			EGL_DEPTH_SIZE, &attr_value);
 	if (status == EGL_TRUE) {
+#ifdef DREAMBOX_DEBUG
+		fprintf(stderr, "DREAM: GL_CreateContext now depth_size=%d\n", attr_value);
+#endif
 		_this->gl_config.depth_size = attr_value;
 	}
 	status =
@@ -347,7 +360,19 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 			wdata->gles_configs[wdata->gles_config],
 			EGL_STENCIL_SIZE, &attr_value);
 	if (status == EGL_TRUE) {
+#ifdef DREAMBOX_DEBUG
+		fprintf(stderr, "DREAM: GL_CreateContext now stencil_size=%d\n", attr_value);
+#endif
 		_this->gl_config.stencil_size = attr_value;
+	}
+	status =
+		eglGetConfigAttrib(phdata->egl_display,
+			wdata->gles_configs[wdata->gles_config],
+			EGL_RENDERABLE_TYPE, &attr_value);
+	if (status == EGL_TRUE) {
+#ifdef DREAMBOX_DEBUG
+		fprintf(stderr, "DREAM: GL_CreateContext now EGL_RENDERABLE_TYPE=0x%04x\n", attr_value);
+#endif
 	}
 
 	/* Under DREAM OpenGL ES output can't be double buffered */
