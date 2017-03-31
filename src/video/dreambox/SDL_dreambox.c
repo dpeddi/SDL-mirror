@@ -47,7 +47,9 @@
 #include "SDL_dreambox_gles.h"
 #include "SDL_dreambox_events.h"
 
-#define DREAMBOX_DEBUG
+#ifndef DREAMBOX_DEBUG
+#define DREAMBOX_DEBUG 1
+#endif
 
 static int
 DREAM_Available(void)
@@ -64,7 +66,7 @@ DREAM_Available(void)
 		(SDL_strncmp(name, "dm900", 5) == 0) || 
 		(SDL_strncmp(name, "dm7080", 6) == 0) ) {
 		
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: Available: %s", name);
 #endif
 		return 1;
@@ -81,7 +83,7 @@ DREAM_SetFramebufferResolution(int width, int height)
 	fd = open("/dev/fb0", O_RDWR, 0);
 	
 	if (fd<0) {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 		fprintf(stderr, "ERROR: DREAM: SetFramebufferResolution failed\n");
 #endif
 		return;
@@ -96,7 +98,7 @@ DREAM_SetFramebufferResolution(int width, int height)
 		vinfo.activate = FB_ACTIVATE_ALL;
 		ioctl(fd, FBIOPUT_VSCREENINFO, &vinfo);
 		
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 		fprintf(stderr, "DREAM: SetFramebufferResolution %dx%d\n", width, height);
 #endif
 		
@@ -109,7 +111,7 @@ DREAM_SetVideomode(const char *mode)
 {
 	FILE *fp = fopen("/proc/stb/video/videomode", "w");
 	
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: SetVideomode %s\n",mode);
 #endif
 	
@@ -131,14 +133,14 @@ DREAM_WaitForSync(void)
 	fd = open("/dev/fb0", O_RDWR, 0);
 	
 	if (fd<0) {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 		fprintf(stderr, "ERROR: DREAM: open framebuffer failed\n");
 #endif
 		return;
 	}
 	if ( ioctl(fd, FBIO_WAITFORVSYNC, &c) == 0) {
 		
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 		fprintf(stderr, "DREAM: WaitForSync\n");
 #endif
 		
@@ -149,7 +151,7 @@ DREAM_WaitForSync(void)
 static void
 DREAM_Destroy(SDL_VideoDevice * device)
 {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: Destroy\n");
 #endif
 	if (device->driverdata != NULL) {
@@ -245,7 +247,7 @@ DREAM_VideoInit(_THIS)
 	SDL_VideoDisplay display;
 	SDL_DisplayMode current_mode;
 
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: VideoInit\n");
 #endif
 
@@ -273,8 +275,7 @@ DREAM_VideoInit(_THIS)
         return -1;
     }
 #endif    
-    
-    //DREAM_InitMouse(_this);
+	
 	return 1;
 }
 
@@ -284,7 +285,7 @@ DREAM_VideoQuit(_THIS)
 #ifdef SDL_INPUT_LINUXEV    
     SDL_EVDEV_Quit();
 #endif 
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: VideoQuit\n");
 #endif
 }
@@ -292,7 +293,7 @@ DREAM_VideoQuit(_THIS)
 void
 DREAM_GetDisplayModes(_THIS, SDL_VideoDisplay * display)
 {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: GetDisplayModes\n");
 #endif
 }
@@ -300,7 +301,7 @@ DREAM_GetDisplayModes(_THIS, SDL_VideoDisplay * display)
 int
 DREAM_SetDisplayMode(_THIS, SDL_VideoDisplay * display, SDL_DisplayMode * mode)
 {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: SetDisplayMode\n");
 #endif
 	return 0;
@@ -312,7 +313,7 @@ DREAM_CreateWindow(_THIS, SDL_Window * window)
 	SDL_VideoData *phdata = (SDL_VideoData *) _this->driverdata;
 	SDL_WindowData *wdata;
 	
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: CreateWindow\n");
 #endif
 	
@@ -349,7 +350,7 @@ DREAM_CreateWindow(_THIS, SDL_Window * window)
 		phdata->egl_refcount++;
 	}
 	
-	//SDL_SetMouseFocus(window);
+	SDL_SetMouseFocus(window);
 	SDL_SetKeyboardFocus(window);
 	
 	/* Window has been successfully created */
@@ -384,7 +385,7 @@ DREAM_ShowWindow(_THIS, SDL_Window * window)
 {
 	FILE *fp = fopen("/proc/stb/video/alpha", "w");
 	
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: ShowWindow\n");
 #endif
 	
@@ -401,7 +402,7 @@ DREAM_HideWindow(_THIS, SDL_Window * window)
 {
 	FILE *fp = fopen("/proc/stb/video/alpha", "w");
 	
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: HideWindow\n");
 #endif
 	

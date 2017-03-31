@@ -29,7 +29,9 @@
 #include "SDL_dreambox.h"
 #include "SDL_dreambox_gles.h"
 
-#define DREAMBOX_DEBUG
+#ifndef DREAMBOX_DEBUG
+#define DREAMBOX_DEBUG 1
+#endif
 
 /* Being a null driver, there's no event stream. We just define stubs for
    most of the API. */
@@ -60,7 +62,7 @@ DREAM_GL_LoadLibrary(_THIS, const char *path)
 	
 	ret = SDL_EGL_LoadLibrary(_this, path, (NativeDisplayType) phdata->egl_display);
 	
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: SDL_EGL_LoadLibrary ret=%d\n",ret);
 #endif
 	
@@ -80,7 +82,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 	EGLint attr_value;
 	EGLint cit;
 	
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: GL_CreateContext\n");
 #endif
 
@@ -112,7 +114,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 	
 	/* Setup stencil bits */
 	if (_this->gl_config.stencil_size) {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 		fprintf(stderr, "DREAM: GL_CreateContext found stencil_size: %d\n", _this->gl_config.buffer_size);
 #endif
 		wdata->gles_attributes[attr_pos++] = EGL_STENCIL_SIZE;
@@ -124,7 +126,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 
 	/* Set number of samples in multisampling */
 	if (_this->gl_config.multisamplesamples) {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 		fprintf(stderr, "DREAM: GL_CreateContext found multisamplesamples: %d\n", _this->gl_config.multisamplesamples);
 #endif
 		wdata->gles_attributes[attr_pos++] = EGL_SAMPLES;
@@ -134,7 +136,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 
 	/* Multisample buffers, OpenGL ES 1.0 spec defines 0 or 1 buffer */
 	if (_this->gl_config.multisamplebuffers) {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 		fprintf(stderr, "DREAM: GL_CreateContext found multisamplebuffers: %d\n", _this->gl_config.multisamplebuffers);
 #endif
 		wdata->gles_attributes[attr_pos++] = EGL_SAMPLE_BUFFERS;
@@ -226,7 +228,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 			return NULL;
 		}
 	}
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: GL_CreateContext now configs=%d\n", configs);
 #endif
 	/* Initialize config index */
@@ -278,7 +280,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 	if (cit == configs) {
 		cit = 0;
 	}
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: GL_CreateContext now cit=%d\n", cit);
 #endif
 	wdata->gles_config = cit;
@@ -328,7 +330,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 			wdata->gles_configs[wdata->gles_config],
 			EGL_SAMPLES, &attr_value);
 	if (status == EGL_TRUE) {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 		fprintf(stderr, "DREAM: GL_CreateContext now multisamplesamples=%d\n", attr_value);
 #endif
 		_this->gl_config.multisamplesamples = attr_value;
@@ -338,7 +340,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 			wdata->gles_configs[wdata->gles_config],
 			EGL_SAMPLE_BUFFERS, &attr_value);
 	if (status == EGL_TRUE) {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 		fprintf(stderr, "DREAM: GL_CreateContext now multisamplebuffers=%d\n", attr_value);
 #endif
 		_this->gl_config.multisamplebuffers = attr_value;
@@ -350,7 +352,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 			wdata->gles_configs[wdata->gles_config],
 			EGL_DEPTH_SIZE, &attr_value);
 	if (status == EGL_TRUE) {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 		fprintf(stderr, "DREAM: GL_CreateContext now depth_size=%d\n", attr_value);
 #endif
 		_this->gl_config.depth_size = attr_value;
@@ -360,7 +362,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 			wdata->gles_configs[wdata->gles_config],
 			EGL_STENCIL_SIZE, &attr_value);
 	if (status == EGL_TRUE) {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 		fprintf(stderr, "DREAM: GL_CreateContext now stencil_size=%d\n", attr_value);
 #endif
 		_this->gl_config.stencil_size = attr_value;
@@ -370,7 +372,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 			wdata->gles_configs[wdata->gles_config],
 			EGL_RENDERABLE_TYPE, &attr_value);
 	if (status == EGL_TRUE) {
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 		fprintf(stderr, "DREAM: GL_CreateContext now EGL_RENDERABLE_TYPE=0x%04x\n", attr_value);
 #endif
 	}
@@ -388,7 +390,7 @@ DREAM_GL_DeleteContext(_THIS, SDL_GLContext context)
 	SDL_VideoData *phdata = (SDL_VideoData *) _this->driverdata;
 	EGLBoolean status;
 	
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: DeleteContext\n");
 #endif
 	
@@ -419,7 +421,7 @@ DREAM_GL_MakeCurrent(_THIS, SDL_Window * window, SDL_GLContext context)
 	SDL_WindowData *wdata;
 	EGLBoolean status;
 	
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: GL_MakeCurrent\n");
 #endif
 	
@@ -466,7 +468,7 @@ DREAM_GL_SwapWindow(_THIS, SDL_Window * window)
 	SDL_VideoData *phdata = (SDL_VideoData *) _this->driverdata;
 	SDL_WindowData *wdata = (SDL_WindowData *) window->driverdata;
 	
-#ifdef DREAMBOX_DEBUG
+#if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: GL_SwapWindow\n");
 #endif
 	
