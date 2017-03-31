@@ -22,26 +22,17 @@
 *  Copyright (C) 2017 Emanuel Strobel
 */
 
+#include "../../SDL_internal.h"
+
 #ifndef __SDL_DREAMBOX_H__
 #define __SDL_DREAMBOX_H__
-
-#if SDL_VIDEO_DRIVER_DREAMBOX && SDL_VIDEO_OPENGL_EGL
 
 #include <GLES/gl.h>
 #include <GLES2/gl2.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#include "../../SDL_internal.h"
 #include "../SDL_sysvideo.h"
-#include "../SDL_egl_c.h"
-
-#define DREAM_GL_GetAttribute SDL_EGL_GetAttribute
-#define DREAM_GL_GetProcAddress SDL_EGL_GetProcAddress
-#define DREAM_GL_UnloadLibrary SDL_EGL_UnloadLibrary
-#define DREAM_GL_SetSwapInterval SDL_EGL_SetSwapInterval
-#define DREAM_GL_GetSwapInterval SDL_EGL_GetSwapInterval
-#define DREAM_GL_DeleteContext SDL_EGL_DeleteContext
 
 typedef struct SDL_VideoData
 {
@@ -104,14 +95,6 @@ void DREAM_DestroyWindow(_THIS, SDL_Window * window);
 /* Window manager function */
 SDL_bool DREAM_GetWindowWMInfo(_THIS, SDL_Window * window,
                              struct SDL_SysWMinfo *info);
-
-/* OpenGL/OpenGL ES functions */
-int DREAM_GL_LoadLibrary(_THIS, const char *path);
-SDL_GLContext DREAM_GL_CreateContext(_THIS, SDL_Window * window);
-int DREAM_GL_MakeCurrent(_THIS, SDL_Window * window, SDL_GLContext context);
-int DREAM_GL_SwapWindow(_THIS, SDL_Window * window);
-
-#endif /* SDL_VIDEO_DRIVER_DREAMBOX && SDL_VIDEO_OPENGL_EGL */
 
 #endif /* __SDL_DREAMBOX_H__ */
 
