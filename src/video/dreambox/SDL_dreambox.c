@@ -26,10 +26,6 @@
 
 #if SDL_VIDEO_DRIVER_DREAMBOX && SDL_VIDEO_OPENGL_EGL
 
-#include <fcntl.h>
-#include <linux/fb.h>
-#include <sys/ioctl.h>
-
 /* SDL internals */
 #include "../SDL_sysvideo.h"
 #include "SDL_version.h"
@@ -45,11 +41,44 @@
 /* DREAM declarations */
 #include "SDL_dreambox.h"
 #include "SDL_dreambox_gles.h"
+#include "SDL_dreambox_modes.h"
 #include "SDL_dreambox_events.h"
 
 #ifndef DREAMBOX_DEBUG
 #define DREAMBOX_DEBUG 1
 #endif
+
+
+/* dreambox helper functions */
+
+void 
+dreambox_wait_for_sync(void)
+{
+	int fd;
+	int c;
+	
+	c = 0;
+	fd = open("/dev/fb0", O_RDWR, 0);
+	
+	if (fd<0) {
+#if DREAMBOX_DEBUG
+		fprintf(stderr, "ERROR: DREAM: open framebuffer failed\n");
+#endif
+		return;
+	}
+	if (ioctl(fd, FBIO_WAITFORVSYNC, &c) == 0) {
+		
+#if DREAMBOX_DEBUG
+		fprintf(stderr, "DREAM: WaitForSync\n");
+#endif
+		
+	}
+	close(fd);
+}
+
+/****************************************************************************/
+/* SDL_VideoDevice functions declaration                                    */
+/****************************************************************************/
 
 static int
 DREAM_Available(void)
@@ -72,80 +101,6 @@ DREAM_Available(void)
 		return 1;
 	}
 	return 0;
-}
-
-void 
-DREAM_SetFramebufferResolution(int width, int height)
-{
-	int fd;
-	struct fb_var_screeninfo vinfo;
-	
-	fd = open("/dev/fb0", O_RDWR, 0);
-	
-	if (fd<0) {
-#if DREAMBOX_DEBUG
-		fprintf(stderr, "ERROR: DREAM: SetFramebufferResolution failed\n");
-#endif
-		return;
-	}
-	
-	if (ioctl(fd, FBIOGET_VSCREENINFO, &vinfo) == 0) {
-		vinfo.xres = width;
-		vinfo.yres = height;
-		vinfo.xres_virtual = width;
-		vinfo.yres_virtual = height * 2;
-		vinfo.bits_per_pixel = 32;
-		vinfo.activate = FB_ACTIVATE_ALL;
-		ioctl(fd, FBIOPUT_VSCREENINFO, &vinfo);
-		
-#if DREAMBOX_DEBUG
-		fprintf(stderr, "DREAM: SetFramebufferResolution %dx%d\n", width, height);
-#endif
-		
-	}
-	close(fd);
-}
-
-void
-DREAM_SetVideomode(const char *mode)
-{
-	FILE *fp = fopen("/proc/stb/video/videomode", "w");
-	
-#if DREAMBOX_DEBUG
-	fprintf(stderr, "DREAM: SetVideomode %s\n",mode);
-#endif
-	
-	if (fp) {
-		fprintf(fp, "%s", mode);
-		fclose(fp);
-	}
-	else
-		SDL_SetError("DREAM: i/o file /proc/stb/video/videomode");
-}
-
-void 
-DREAM_WaitForSync(void)
-{
-	int fd;
-	int c;
-	
-	c = 0;
-	fd = open("/dev/fb0", O_RDWR, 0);
-	
-	if (fd<0) {
-#if DREAMBOX_DEBUG
-		fprintf(stderr, "ERROR: DREAM: open framebuffer failed\n");
-#endif
-		return;
-	}
-	if ( ioctl(fd, FBIO_WAITFORVSYNC, &c) == 0) {
-		
-#if DREAMBOX_DEBUG
-		fprintf(stderr, "DREAM: WaitForSync\n");
-#endif
-		
-	}
-	close(fd);
 }
 
 static void
@@ -185,7 +140,6 @@ DREAM_Create()
 	device->driverdata = phdata;
 
 	phdata->egl_initialized = SDL_TRUE;
-
 
 	/* Setup amount of available displays */
 	device->num_displays = 0;
@@ -246,28 +200,34 @@ DREAM_VideoInit(_THIS)
 {
 	SDL_VideoDisplay display;
 	SDL_DisplayMode current_mode;
+	SDL_DisplayModeData *modedata;
+	const char *videomode = "720p";
 
 #if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: VideoInit\n");
 #endif
 
+	//if (UIKit_InitModes(_this) < 0) {
+	//	return -1;
+	//}
 	SDL_zero(current_mode);
-
+	modedata = (SDL_DisplayModeData *) SDL_calloc(1, sizeof(SDL_DisplayModeData));
+	if (!modedata)
+		return -1;
+	
 	current_mode.w = 1280;
 	current_mode.h = 720;
-
-	current_mode.refresh_rate = 50;
+	current_mode.refresh_rate = 60;
 	current_mode.format = SDL_PIXELFORMAT_RGBA8888;
-	current_mode.driverdata = NULL;
+	current_mode.driverdata = modedata;
+	SDL_strlcpy(modedata->videomode, videomode, SDL_strlen(videomode)+1);
 
 	SDL_zero(display);
 	display.desktop_mode = current_mode;
 	display.current_mode = current_mode;
-	display.driverdata = NULL;
 	
-	DREAM_SetVideomode("1080p");
-	DREAM_SetFramebufferResolution(current_mode.w, current_mode.h);
-
+	dreambox_set_displaymode(&current_mode);
+	
 	SDL_AddVideoDisplay(&display);
 	
 #ifdef SDL_INPUT_LINUXEV    
@@ -288,23 +248,9 @@ DREAM_VideoQuit(_THIS)
 #if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: VideoQuit\n");
 #endif
-}
-
-void
-DREAM_GetDisplayModes(_THIS, SDL_VideoDisplay * display)
-{
-#if DREAMBOX_DEBUG
-	fprintf(stderr, "DREAM: GetDisplayModes\n");
-#endif
-}
-
-int
-DREAM_SetDisplayMode(_THIS, SDL_VideoDisplay * display, SDL_DisplayMode * mode)
-{
-#if DREAMBOX_DEBUG
-	fprintf(stderr, "DREAM: SetDisplayMode\n");
-#endif
-	return 0;
+	DREAM_QuitModes(_this);
+	
+	dreambox_show_window(SDL_TRUE);
 }
 
 int
@@ -383,35 +329,13 @@ DREAM_SetWindowSize(_THIS, SDL_Window * window)
 void
 DREAM_ShowWindow(_THIS, SDL_Window * window)
 {
-	FILE *fp = fopen("/proc/stb/video/alpha", "w");
-	
-#if DREAMBOX_DEBUG
-	fprintf(stderr, "DREAM: ShowWindow\n");
-#endif
-	
-	if (fp) {
-		fprintf(fp, "%d", 255);
-		fclose(fp);
-	}
-	else
-		SDL_SetError("DREAM: i/o file /proc/stb/video/alpha");
+	dreambox_show_window(SDL_TRUE);
 }
 
 void
 DREAM_HideWindow(_THIS, SDL_Window * window)
 {
-	FILE *fp = fopen("/proc/stb/video/alpha", "w");
-	
-#if DREAMBOX_DEBUG
-	fprintf(stderr, "DREAM: HideWindow\n");
-#endif
-	
-	if (fp) {
-		fprintf(fp, "%d", 0);
-		fclose(fp);
-	}
-	else
-		SDL_SetError("DREAM: i/o file /proc/stb/video/alpha");
+	dreambox_show_window(SDL_FALSE);
 }
 
 void
@@ -445,6 +369,7 @@ DREAM_DestroyWindow(_THIS, SDL_Window * window)
 /*****************************************************************************/
 /* SDL Window Manager function                                               */
 /*****************************************************************************/
+
 SDL_bool
 DREAM_GetWindowWMInfo(_THIS, SDL_Window * window, struct SDL_SysWMinfo *info)
 {

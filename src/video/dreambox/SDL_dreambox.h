@@ -27,6 +27,10 @@
 #ifndef __SDL_DREAMBOX_H__
 #define __SDL_DREAMBOX_H__
 
+#include <fcntl.h>
+#include <linux/fb.h>
+#include <sys/ioctl.h>
+
 #include <GLES/gl.h>
 #include <GLES2/gl2.h>
 #include <EGL/egl.h>
@@ -44,10 +48,9 @@ typedef struct SDL_VideoData
 } SDL_VideoData;
 
 
-typedef struct SDL_DisplayData
-{
-
-} SDL_DisplayData;
+typedef struct SDL_DisplayModeData {
+	char videomode[16];
+} SDL_DisplayModeData;
 
 
 typedef struct SDL_WindowData
@@ -57,26 +60,23 @@ typedef struct SDL_WindowData
     EGLConfig gles_configs[32];
     EGLint gles_config;         /* OpenGL ES configuration index      */
     EGLContext gles_context;    /* OpenGL ES context                  */
-    EGLint gles_attributes[256];        /* OpenGL ES attributes for context   */
+    EGLint gles_attributes[256]; /* OpenGL ES attributes for context   */
     EGLSurface gles_surface;    /* OpenGL ES target rendering surface */
 
 } SDL_WindowData;
+
+
+/* Display helper functions */
+void dreambox_wait_for_sync();
 
 
 /****************************************************************************/
 /* SDL_VideoDevice functions declaration                                    */
 /****************************************************************************/
 
-/* Display helper functions */
-void DREAM_SetFramebufferResolution(int width, int height);
-void DREAM_SetVideomode(const char *mode);
-void DREAM_WaitForSync();
-
 /* Display and window functions */
 int DREAM_VideoInit(_THIS);
 void DREAM_VideoQuit(_THIS);
-void DREAM_GetDisplayModes(_THIS, SDL_VideoDisplay * display);
-int DREAM_SetDisplayMode(_THIS, SDL_VideoDisplay * display, SDL_DisplayMode * mode);
 int DREAM_CreateWindow(_THIS, SDL_Window * window);
 int DREAM_CreateWindowfrom(_THIS, SDL_Window * window, const void *data);
 void DREAM_SetWindowTitle(_THIS, SDL_Window * window);

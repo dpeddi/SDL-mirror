@@ -97,6 +97,12 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 
 	wdata->gles_attributes[attr_pos++] = EGL_SURFACE_TYPE;
 	wdata->gles_attributes[attr_pos++] = EGL_KHR_surfaceless_context ? EGL_DONT_CARE : EGL_PBUFFER_BIT;
+	
+/* FIXME: status != EGL_TRUE
+ * 
+	wdata->gles_attributes[attr_pos++] = EGL_CONTEXT_CLIENT_VERSION;
+	wdata->gles_attributes[attr_pos++] = 2;
+*/
 	wdata->gles_attributes[attr_pos++] = EGL_RED_SIZE;
 	wdata->gles_attributes[attr_pos++] = 8;
 	wdata->gles_attributes[attr_pos++] = EGL_GREEN_SIZE;
@@ -288,7 +294,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 	/* Create OpenGL ES context */
 	wdata->gles_context =
 		eglCreateContext(phdata->egl_display,
-						 wdata->gles_configs[wdata->gles_config], NULL, NULL);
+						 wdata->gles_configs[wdata->gles_config], EGL_NO_CONTEXT, NULL);
 	if (wdata->gles_context == EGL_NO_CONTEXT) {
 		SDL_SetError("DREAM: OpenGL ES context creation has been failed");
 		return NULL;
@@ -378,7 +384,7 @@ DREAM_GL_CreateContext(_THIS, SDL_Window * window)
 	}
 
 	/* Under DREAM OpenGL ES output can't be double buffered */
-	_this->gl_config.double_buffer = 0;
+	//_this->gl_config.double_buffer = 0;
 
 	/* GL ES context was successfully created */
 	return wdata->gles_context;
@@ -482,7 +488,7 @@ DREAM_GL_SwapWindow(_THIS, SDL_Window * window)
 	/* Wait until OpenGL ES rendering is completed */
 	eglWaitGL();
 	
-	DREAM_WaitForSync();
+	dreambox_wait_for_sync();
 	
 	eglSwapBuffers(phdata->egl_display, wdata->gles_surface);
 	return 0;
