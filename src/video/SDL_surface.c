@@ -29,49 +29,6 @@
 #include "SDL_pixels_c.h"
 #include "SDL_leaks.h"
 
-#include "SDL_surface.h"
-
-/* check bcm accel */
-int bcm_can_accel(SDL_Surface *dst) {
-	int stride, height, bpp;
-	bpp = dst->format->BitsPerPixel;
-	height = dst->h;
-	stride = dst->w * bpp/8;
-	if (((bpp == 8) || (bpp == 16) || (bpp == 32)) && (stride > 48)) {
-		switch (bpp)
-		{
-			case 8:
-				if ((height * stride) > 12000) {
-					break;
-				}
-				else {
-					fprintf(stderr, "FillHWRect is no candidate for accel (height * stride) %d < 12000\n", (height * stride));
-					return(0);
-				}
-			case 16:
-				if ((height * stride) > 32000) {
-					break;
-				}
-				else {
-					fprintf(stderr, "FillHWRect is no candidate for accel (height * stride) %d < 32000\n", (height * stride));
-					return(0);
-				}
-			case 32:
-				if ((height * stride) > 48000) {
-					break;
-				}
-				else {
-					fprintf(stderr, "FillHWRect is no candidate for accel (height * stride) %d < 48000\n", (height * stride));
-					return(0);
-				}
-			default:
-				fprintf(stderr, "FillHWRect is no candidate for accel\n");
-				return(0);
-		}
-		return (1);
-	}
-	return(0);
-}
 
 /* Public routines */
 /*
@@ -628,7 +585,7 @@ int SDL_FillRect(SDL_Surface *dst, SDL_Rect *dstrect, Uint32 color)
 
 	/* Check for hardware acceleration */
 	if ( ((dst->flags & SDL_HWSURFACE) == SDL_HWSURFACE) &&
-					video->info.blit_fill && bcm_can_accel(dst)) {
+					video->info.blit_fill) {
 		SDL_Rect hw_rect;
 		if ( dst == SDL_VideoSurface ) {
 			hw_rect = *dstrect;

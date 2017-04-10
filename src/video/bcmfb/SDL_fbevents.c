@@ -118,7 +118,6 @@ int BCMFB_OpenKeyboard(_THIS)
 				if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
 				{
 					SDL_SetError("Unable to open %s",name);
-					exit(0);
 				}
 
 				else {
@@ -133,7 +132,6 @@ int BCMFB_OpenKeyboard(_THIS)
 				if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
 				{
 					SDL_SetError("Unable to open %s",name);
-					exit(0);
 				}
 				else {
 					rc = kbd_fd[kbd_index];
@@ -147,7 +145,6 @@ int BCMFB_OpenKeyboard(_THIS)
 				if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
 				{
 					SDL_SetError("Unable to open %s",name);
-					exit(0);
 				}
 				else {
 					arc = kbd_fd[kbd_index];
@@ -161,7 +158,6 @@ int BCMFB_OpenKeyboard(_THIS)
 				if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
 				{
 					SDL_SetError("Unable to open %s",name);
-					exit(0);
 				}
 
 				else {
@@ -176,7 +172,6 @@ int BCMFB_OpenKeyboard(_THIS)
 				if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
 				{
 					SDL_SetError("Unable to open %s",name);
-					exit(0);
 				}
 #ifdef DEBUG_KEYBOARD
 				else {
@@ -249,7 +244,6 @@ int BCMFB_OpenMouse(_THIS)
 				if((mice_fd[++m_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
 				{
 					SDL_SetError("Unable to open %s",name);
-						exit(0);
 				}
 #ifdef DEBUG_MOUSE
 				else fprintf(stderr,"'%s' found %s\n",name,device);
@@ -259,7 +253,6 @@ int BCMFB_OpenMouse(_THIS)
 				if((mice_fd[++m_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
 				{
 					SDL_SetError("Unable to open %s",name);
-					exit(0);
 				}
 #ifdef DEBUG_MOUSE
 				else fprintf(stderr,"'%s' found %s\n",name,device);
@@ -445,7 +438,17 @@ static void handle_keyboard(_THIS, int k_fd)
 
 		if (mode == KMOD_NONE && caps == 1) {mode=KMOD_RSHIFT;}
 		
-		if ((code == KEY_TV) && ev.value == 1 && ev.type == EV_KEY) {exit(0);}
+		if ((code == KEY_TV) && ev.value == 1 && ev.type == EV_KEY)
+		{
+			keysym.sym = SDLK_q;
+			keysym.scancode = (unsigned int) K(KT_ASCII,13);
+			keysym.mod = KMOD_CTRL;
+			keysym.unicode = 0;
+			posted += SDL_PrivateKeyboard(pressed, &keysym);
+			SDL_VideoQuit();
+			SDL_Quit();
+			exit(0);
+		}
 		
 		if ((ev.value == 0 || ev.value == 1 || ev.value == 2) && ev.type == EV_KEY)
 		{

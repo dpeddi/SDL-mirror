@@ -28,10 +28,9 @@
 #include "SDL_fbvideo.h"
 #include "SDL_fbmouse_c.h"
 #include "SDL_fbevents_c.h"
-#include "SDL_bcmfb.h"
 
 //#define BCMFB_DEBUG
-#define BCMFB_ACCEL_DEBUG
+//#define BCMFB_ACCEL_DEBUG
 
 /* A list of video resolutions that we query for (sorted largest to smallest) */
 static const SDL_Rect checkres[] = {
@@ -528,7 +527,6 @@ static int BCMFB_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	unsigned int current_w, current_h;
 	const char *SDL_fbdev;
 	const char *rotation;
-	const char *bcmfb_accel;
 	FILE *modesdb;
 
 	/* Initialize the library */
@@ -579,12 +577,6 @@ static int BCMFB_VideoInit(_THIS, SDL_PixelFormat *vformat)
 			return(-1);
 	}
 
-	/* Check if the user wants to disable hardware acceleration */
-	bcmfb_accel = SDL_getenv("SDL_BCMFB_ACCEL");
-	if ( bcmfb_accel == NULL ) {
-		bcmfb_accel = "0";
-	}
-
 	mapped_memlen = finfo.smem_len;
 
 	/* Determine the current screen depth */
@@ -624,11 +616,6 @@ static int BCMFB_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	 */
 	vinfo.accel_flags = 0;	/* Temporarily reserve registers */
 	ioctl(console_fd, FBIOPUT_VSCREENINFO, &vinfo);
-	
-	/* BCMFB acceleration */
-	if (finfo.accel) {
-		finfo.accel = FB_ACCEL_VC4;
-	}
 	
 	rotate = BCMFB_ROTATE_NONE;
 	rotation = SDL_getenv("SDL_VIDEO_BCMFB_ROTATION");
@@ -747,18 +734,6 @@ static int BCMFB_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	this->info.hw_available = !shadow_fb;
 	this->info.video_mem = shadow_fb ? 0 : finfo.smem_len/1024;
 	
-	// Fill in our hardware acceleration capabilities
-	if ( !SDL_strcmp(bcmfb_accel, "1") ) {
-		if (!bcm_accel_init()) {
-#ifdef BCMFB_ACCEL_DEBUG
-			printf("BCMFB hardware accelerator init OK.\n");
-#endif
-			BCMFB_Accel(this, finfo.accel);
-		}
-		else {
-			SDL_SetError("BCMFB can not get hardware accelerator.");
-		}
-	}
 	if (shadow_fb) {
 		shadow_mem = (char *)SDL_malloc(mapped_memlen);
 		if (shadow_mem == NULL) {
@@ -1133,19 +1108,7 @@ static SDL_Surface *BCMFB_SetVideoMode(_THIS, SDL_Surface *current,
 			this->screen = NULL;
 		}
 	}
-#if 0
-	/* Set the accel mem */
-	accel_memlen = current->h*current->pitch;
-	accel_offset = (mapped_memlen/accel_memlen - 1) * accel_memlen;
-	accel_mem = (char *)current->pixels + accel_offset;
 	
-#ifdef BCMFB_ACCEL_DEBUG
-	printf("BCMFB IO I/O at    : %p\n", accel_mem);
-	printf("BCMFB_ACCEL_SIZE   : 0x%8x (%dMB)\n", accel_memlen, (accel_memlen/1024/1024));
-	printf("BCMFB_ACCEL_OFFSET : 0x%8x (%dMB)\n", accel_offset, (accel_offset/1024/1024));
-#endif
-
-#endif
 	/* Set the update rectangle function */
 	this->UpdateRects = BCMFB_DirectUpdate;
 
