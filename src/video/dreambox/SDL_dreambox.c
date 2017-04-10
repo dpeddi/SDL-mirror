@@ -55,9 +55,8 @@ void
 dreambox_wait_for_sync(void)
 {
 	int fd;
-	int c;
+	unsigned int c = 0;
 	
-	c = 0;
 	fd = open("/dev/fb0", O_RDWR, 0);
 	
 	if (fd<0) {
@@ -66,13 +65,8 @@ dreambox_wait_for_sync(void)
 #endif
 		return;
 	}
-	if (ioctl(fd, FBIO_WAITFORVSYNC, &c) == 0) {
-		
-#if DREAMBOX_DEBUG
-		fprintf(stderr, "DREAM: WaitForSync\n");
-#endif
-		
-	}
+	
+	ioctl(fd, FBIO_WAITFORVSYNC, &c);
 	close(fd);
 }
 
@@ -140,6 +134,11 @@ DREAM_Create()
 	device->driverdata = phdata;
 
 	phdata->egl_initialized = SDL_TRUE;
+	
+	/* FIXME:has no effect */
+	phdata->egl_swapinterval = 0;
+	
+	phdata->egl_refcount = 0;
 
 	/* Setup amount of available displays */
 	device->num_displays = 0;
@@ -153,7 +152,7 @@ DREAM_Create()
 	device->GetDisplayModes = DREAM_GetDisplayModes;
 	device->SetDisplayMode = DREAM_SetDisplayMode;
 	device->CreateWindow = DREAM_CreateWindow;
-	device->CreateWindowFrom = DREAM_CreateWindowfrom;
+	device->CreateWindowFrom = DREAM_CreateWindowFrom;
 	device->SetWindowTitle = DREAM_SetWindowTitle;
 	device->SetWindowIcon = DREAM_SetWindowIcon;
 	device->SetWindowPosition = DREAM_SetWindowPosition;
@@ -167,15 +166,15 @@ DREAM_Create()
 	device->SetWindowGrab = DREAM_SetWindowGrab;
 	device->DestroyWindow = DREAM_DestroyWindow;
 	device->GetWindowWMInfo = DREAM_GetWindowWMInfo;
-	device->GL_LoadLibrary = DREAM_GL_LoadLibrary;
-	device->GL_GetProcAddress = DREAM_GL_GetProcAddress;
-	device->GL_UnloadLibrary = DREAM_GL_UnloadLibrary;
-	device->GL_CreateContext = DREAM_GL_CreateContext;
-	device->GL_MakeCurrent = DREAM_GL_MakeCurrent;
-	device->GL_SetSwapInterval = DREAM_GL_SetSwapInterval;
-	device->GL_GetSwapInterval = DREAM_GL_GetSwapInterval;
-	device->GL_SwapWindow = DREAM_GL_SwapWindow;
-	device->GL_DeleteContext = DREAM_GL_DeleteContext;
+	device->GL_LoadLibrary = DREAM_EGL_LoadLibrary;
+	device->GL_GetProcAddress = DREAM_EGL_GetProcAddress;
+	device->GL_UnloadLibrary = DREAM_EGL_UnloadLibrary;
+	device->GL_CreateContext = DREAM_EGL_CreateContext;
+	device->GL_MakeCurrent = DREAM_EGL_MakeCurrent;
+	device->GL_SetSwapInterval = DREAM_EGL_SetSwapInterval;
+	device->GL_GetSwapInterval = DREAM_EGL_GetSwapInterval;
+	device->GL_SwapWindow = DREAM_EGL_SwapWindow;
+	device->GL_DeleteContext = DREAM_EGL_DeleteContext;
 	device->PumpEvents = DREAM_PumpEvents;
 
 	/* !!! FIXME: implement SetWindowBordered */
@@ -186,7 +185,7 @@ DREAM_Create()
 VideoBootStrap DREAM_bootstrap = {
 
 	"dreambox",
-	"SDL Dreambox Video Driver",
+	"Dreambox EGL Video Driver",
 	
 	DREAM_Available,
 	DREAM_Create
@@ -206,10 +205,6 @@ DREAM_VideoInit(_THIS)
 #if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: VideoInit\n");
 #endif
-
-	//if (UIKit_InitModes(_this) < 0) {
-	//	return -1;
-	//}
 	SDL_zero(current_mode);
 	modedata = (SDL_DisplayModeData *) SDL_calloc(1, sizeof(SDL_DisplayModeData));
 	if (!modedata)
@@ -226,16 +221,20 @@ DREAM_VideoInit(_THIS)
 	display.desktop_mode = current_mode;
 	display.current_mode = current_mode;
 	
+	dreambox_get_videomode(DREAM_InitVideoMode);
 	dreambox_set_displaymode(&current_mode);
-	
+
 	SDL_AddVideoDisplay(&display);
+	
+	if (DREAM_InitModes(_this) < 0) {
+		return -1;
+	}
 	
 #ifdef SDL_INPUT_LINUXEV    
     if (SDL_EVDEV_Init() < 0) {
         return -1;
     }
 #endif    
-	
 	return 1;
 }
 
@@ -243,14 +242,14 @@ void
 DREAM_VideoQuit(_THIS)
 {
 #ifdef SDL_INPUT_LINUXEV    
-    SDL_EVDEV_Quit();
+	SDL_EVDEV_Quit();
 #endif 
-#if DREAMBOX_DEBUG
-	fprintf(stderr, "DREAM: VideoQuit\n");
-#endif
 	DREAM_QuitModes(_this);
 	
 	dreambox_show_window(SDL_TRUE);
+#if DREAMBOX_DEBUG
+	fprintf(stderr, "DREAM: VideoQuit: exit Video Driver...\n");
+#endif
 }
 
 int
@@ -258,6 +257,7 @@ DREAM_CreateWindow(_THIS, SDL_Window * window)
 {
 	SDL_VideoData *phdata = (SDL_VideoData *) _this->driverdata;
 	SDL_WindowData *wdata;
+	EGLNativeDisplayType *nativeDisplay=NULL;
 	
 #if DREAMBOX_DEBUG
 	fprintf(stderr, "DREAM: CreateWindow\n");
@@ -274,15 +274,19 @@ DREAM_CreateWindow(_THIS, SDL_Window * window)
 
 	/* Check if window must support OpenGL ES rendering */
 	if ((window->flags & SDL_WINDOW_OPENGL) == SDL_WINDOW_OPENGL) {
-
 		EGLBoolean initstatus;
-
+#if DREAMBOX_DEBUG
+		fprintf(stderr, "DREAM: CreateWindow: app must support OpenGL ES rendering\n");
+#endif
 		/* Mark this window as OpenGL ES compatible */
 		wdata->uses_gles = SDL_TRUE;
 
 		/* Create connection to OpenGL ES */
 		if (phdata->egl_display == EGL_NO_DISPLAY) {
-			phdata->egl_display = eglGetDisplay((NativeDisplayType) 0);
+			
+			nativeDisplay = (EGLNativeDisplayType)0L;
+			phdata->egl_display = eglGetDisplay(nativeDisplay);
+			
 			if (phdata->egl_display == EGL_NO_DISPLAY) {
 				return SDL_SetError("DREAM: Can't get connection to OpenGL ES");
 			}
@@ -292,7 +296,6 @@ DREAM_CreateWindow(_THIS, SDL_Window * window)
 				return SDL_SetError("DREAM: Can't init OpenGL ES library");
 			}
 		}
-
 		phdata->egl_refcount++;
 	}
 	
@@ -304,7 +307,7 @@ DREAM_CreateWindow(_THIS, SDL_Window * window)
 }
 
 int
-DREAM_CreateWindowfrom(_THIS, SDL_Window * window, const void *data)
+DREAM_CreateWindowFrom(_THIS, SDL_Window * window, const void *data)
 {
 	return -1;
 }

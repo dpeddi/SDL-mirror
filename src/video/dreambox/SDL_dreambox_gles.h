@@ -33,18 +33,22 @@
 #include "../SDL_egl_c.h"
 
 /* OpenGL/OpenGL ES functions */
-#define DREAM_GL_GetAttribute SDL_EGL_GetAttribute
-#define DREAM_GL_GetProcAddress SDL_EGL_GetProcAddress
-#define DREAM_GL_UnloadLibrary SDL_EGL_UnloadLibrary
-#define DREAM_GL_SetSwapInterval SDL_EGL_SetSwapInterval
-#define DREAM_GL_GetSwapInterval SDL_EGL_GetSwapInterval
+//#define DREAM_EGL_GetAttribute SDL_EGL_GetAttribute
+//#define DREAM_EGL_GetProcAddress SDL_EGL_GetProcAddress
+#define DREAM_EGL_UnloadLibrary SDL_EGL_UnloadLibrary
+//#define DREAM_EGL_SetSwapInterval SDL_EGL_SetSwapInterval
+//#define DREAM_EGL_GetSwapInterval SDL_EGL_GetSwapInterval
 
-extern int DREAM_GL_LoadLibrary(_THIS, const char *path);
-extern SDL_GLContext DREAM_GL_CreateContext(_THIS, SDL_Window * window);
-extern int DREAM_GL_MakeCurrent(_THIS, SDL_Window * window, SDL_GLContext context);
-extern int DREAM_GL_SwapWindow(_THIS, SDL_Window * window);
-extern void DREAM_GL_DeleteContext(_THIS, SDL_GLContext context);
+extern int DREAM_EGL_LoadLibrary(_THIS, const char *path);
 
+extern void *DREAM_EGL_GetProcAddress(_THIS, const char *proc);
+extern int DREAM_EGL_LoadLibrary(_THIS, const char *path);
+extern SDL_GLContext DREAM_EGL_CreateContext(_THIS, SDL_Window * window);
+extern int DREAM_EGL_MakeCurrent(_THIS, SDL_Window * window, SDL_GLContext context);
+extern int DREAM_EGL_SwapWindow(_THIS, SDL_Window * window);
+extern void DREAM_EGL_DeleteContext(_THIS, SDL_GLContext context);
+extern int DREAM_EGL_SetSwapInterval(_THIS, int interval);
+extern int DREAM_EGL_GetSwapInterval(_THIS);
 #endif /* SDL_VIDEO_DRIVER_DREAMBOX && SDL_VIDEO_OPENGL_EGL */
 
 #endif /* __SDL_DREAMBOX_GLES_H__ */

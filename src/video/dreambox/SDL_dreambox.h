@@ -28,22 +28,31 @@
 #define __SDL_DREAMBOX_H__
 
 #include <fcntl.h>
+#include <unistd.h>
 #include <linux/fb.h>
 #include <sys/ioctl.h>
 
-#include <GLES/gl.h>
-#include <GLES2/gl2.h>
+#ifdef SDL_VIDEO_OPENGL_EGL
+
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <EGL/eglplatform.h>
+#include <KHR/khrplatform.h>
+
+#ifdef SDL_VIDEO_OPENGL_ES2
+
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
 
 #include "../SDL_sysvideo.h"
+
 
 typedef struct SDL_VideoData
 {
     SDL_bool egl_initialized;   /* OpenGL ES device initialization status */
     EGLDisplay egl_display;     /* OpenGL ES display connection           */
     uint32_t egl_refcount;      /* OpenGL ES reference count              */
-    uint32_t swapinterval;      /* OpenGL ES default swap interval        */
+    uint32_t egl_swapinterval;  /* OpenGL ES default swap interval        */
 
 } SDL_VideoData;
 
@@ -66,6 +75,9 @@ typedef struct SDL_WindowData
 } SDL_WindowData;
 
 
+/* store videomode startvalue */
+char DREAM_InitVideoMode[16];
+
 /* Display helper functions */
 void dreambox_wait_for_sync();
 
@@ -78,7 +90,7 @@ void dreambox_wait_for_sync();
 int DREAM_VideoInit(_THIS);
 void DREAM_VideoQuit(_THIS);
 int DREAM_CreateWindow(_THIS, SDL_Window * window);
-int DREAM_CreateWindowfrom(_THIS, SDL_Window * window, const void *data);
+int DREAM_CreateWindowFrom(_THIS, SDL_Window * window, const void *data);
 void DREAM_SetWindowTitle(_THIS, SDL_Window * window);
 void DREAM_SetWindowIcon(_THIS, SDL_Window * window, SDL_Surface * icon);
 void DREAM_SetWindowPosition(_THIS, SDL_Window * window);
@@ -95,6 +107,10 @@ void DREAM_DestroyWindow(_THIS, SDL_Window * window);
 /* Window manager function */
 SDL_bool DREAM_GetWindowWMInfo(_THIS, SDL_Window * window,
                              struct SDL_SysWMinfo *info);
+
+#endif /* SDL_VIDEO_OPENGL_ES2 */
+
+#endif /* SDL_VIDEO_OPENGL_EGL */
 
 #endif /* __SDL_DREAMBOX_H__ */
 

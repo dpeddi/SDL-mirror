@@ -35,14 +35,15 @@
 #define DREAMBOX_DEBUG 1
 #endif
 
+
 /* Display helper functions */
 void
-dreambox_free_display_modeData(SDL_DisplayMode * mode)
+dreambox_free_display_mode_data(SDL_DisplayMode * mode)
 {
-    if (mode->driverdata != NULL) {
-        SDL_free(mode->driverdata);
-        mode->driverdata = NULL;
-    }
+	if (mode->driverdata != NULL) {
+		SDL_free(mode->driverdata);
+		mode->driverdata = NULL;
+	}
 }
 
 void
@@ -51,7 +52,7 @@ dreambox_show_window(SDL_bool show)
 	FILE *fp = fopen("/proc/stb/video/alpha", "w");
 	
 #if DREAMBOX_DEBUG
-	fprintf(stderr, "DREAM: Show Window: %d\n", show);
+	fprintf(stderr, "DREAM: %s Window\n", show ? "Show" : "Hide");
 #endif
 	
 	if (fp) {
@@ -62,7 +63,7 @@ dreambox_show_window(SDL_bool show)
 		SDL_SetError("DREAM: i/o file /proc/stb/video/alpha");
 }
 
-void 
+int 
 dreambox_set_framebuffer_resolution(int width, int height)
 {
 	int fd;
@@ -71,10 +72,8 @@ dreambox_set_framebuffer_resolution(int width, int height)
 	fd = open("/dev/fb0", O_RDWR, 0);
 	
 	if (fd<0) {
-#if DREAMBOX_DEBUG
-		fprintf(stderr, "ERROR: DREAM: Set Framebuffer Resolution failed!\n");
-#endif
-		return;
+		SDL_SetError("DREAM: Open Framebuffer failed!");
+		return -1;
 	}
 	
 	if (ioctl(fd, FBIOGET_VSCREENINFO, &vinfo) == 0) {
@@ -90,36 +89,64 @@ dreambox_set_framebuffer_resolution(int width, int height)
 		fprintf(stderr, "DREAM: Set Framebuffer Resolution: %dx%d\n", width, height);
 #endif
 		
+	} else {
+		SDL_SetError("DREAM: Open Framebuffer ioctl failed!");
+		return -1;
 	}
 	close(fd);
+	return 0;
 }
 
-void
-dreambox_set_videomode(const char * mode)
+int
+dreambox_set_videomode(const char * vmode)
 {
 	FILE *fp = fopen("/proc/stb/video/videomode", "w");
 	
 #if DREAMBOX_DEBUG
-	fprintf(stderr, "DREAM: Set Videomode: %s\n",mode);
+	fprintf(stderr, "DREAM: Set Videomode: %s\n",vmode);
 #endif
 	
 	if (fp) {
-		fprintf(fp, "%s", mode);
+		fprintf(fp, vmode);
 		fclose(fp);
 	}
 	else
-		SDL_SetError("DREAM: i/o file /proc/stb/video/videomode");
+		return SDL_SetError("DREAM: i/o file /proc/stb/video/videomode");
+	return 0;
+}
+
+int  
+dreambox_get_videomode(char * dest)
+{
+	FILE *fp = fopen("/proc/stb/video/videomode", "r");
+	char *tmp;
+	
+	dest[0] = 0;
+	
+	if (fp) {
+		fgets(dest, 16, fp);
+		fclose(fp);
+		tmp = SDL_strrchr(dest, '\n');
+		if (tmp) 
+			*tmp = '\0';  
+#if DREAMBOX_DEBUG
+	fprintf(stderr, "DREAM: Get Videomode: %s\n", dest);
+#endif
+	}
+	else
+		return SDL_SetError("DREAM: i/o file /proc/stb/video/videomode");
+	return 0;
 }
 
 int
 dreambox_get_displaymode_from_videomode(const char * vmode, SDL_DisplayMode * mode)
 {
 	
-	unsigned int i, type;
+	unsigned int i;
 	char *pch;
-	char buffer_w[8];
-	char buffer_h[8];
-	char buffer_r[8];
+	char buffer_w[16];
+	char buffer_h[16];
+	char buffer_r[16];
 	const char types[] = { 'p', 'i', 'x' };
 	
 	mode->format = SDL_PIXELFORMAT_RGBA8888;
@@ -135,9 +162,8 @@ dreambox_get_displaymode_from_videomode(const char * vmode, SDL_DisplayMode * mo
 			buffer_h[0] = 0;
 			buffer_r[0] = 0;
 			switch(types[i]) {
+				case 'i':
 				case 'p':
-				case 'i': 
-					type = types[i];
 					if (types[i] == 'p')
 						SDL_sscanf(vmode, "%[^p]p%s", buffer_h, buffer_r);
 					else
@@ -171,7 +197,6 @@ dreambox_get_displaymode_from_videomode(const char * vmode, SDL_DisplayMode * mo
 						}
 					break;
 				case 'x':
-					type = types[i];
 					SDL_sscanf(vmode, "%[^x]x%s", buffer_w, buffer_h);
 					mode->h = SDL_atoi(buffer_h);
 					mode->w = SDL_atoi(buffer_w);
@@ -184,11 +209,14 @@ dreambox_get_displaymode_from_videomode(const char * vmode, SDL_DisplayMode * mo
 	}
 }
 
-void 
+int 
 dreambox_set_displaymode(SDL_DisplayMode * mode)
 {
-	dreambox_set_framebuffer_resolution(mode->w, mode->h);
-	dreambox_set_videomode(((SDL_DisplayModeData*)mode->driverdata)->videomode);
+	if ( (dreambox_set_videomode(((SDL_DisplayModeData*)mode->driverdata)->videomode) < 0) ||
+		(dreambox_set_framebuffer_resolution(mode->w, mode->h) < 0) ) {
+		return -1;
+	}
+	return 0;
 }
 
 /****************************************************************************/
@@ -198,24 +226,79 @@ dreambox_set_displaymode(SDL_DisplayMode * mode)
 void 
 DREAM_QuitModes(_THIS)
 {
-	int i, j;
-#if DREAMBOX_DEBUG
-		fprintf(stderr, "DREAM: QuitModes\n");
-#endif
+	unsigned int i, j;
+
 	for (i = 0; i < _this->num_displays; i++) {
 		SDL_VideoDisplay *display = &_this->displays[i];
-
-		dreambox_free_display_modeData(&display->desktop_mode);
+		if (i == 0)
+			DREAM_SetVideoMode(_this, display, DREAM_InitVideoMode);
+		
 		for (j = 0; j < display->num_display_modes; j++) {
 			SDL_DisplayMode *mode = &display->display_modes[j];
-			dreambox_free_display_modeData(mode);
-		}
-
-		if (display->driverdata != NULL) {
-			SDL_free(display->driverdata);
-			display->driverdata = NULL;
+			dreambox_free_display_mode_data(mode);
 		}
 	}
+#if DREAMBOX_DEBUG
+	fprintf(stderr, "DREAM: QuitModes: restore old Videomode: %s\n", DREAM_InitVideoMode);
+#endif
+}
+
+int 
+DREAM_InitModes(_THIS)
+{
+	unsigned int i;
+	const char *override = SDL_getenv("SDL_VIDEOMODE");
+	char videomodes[256] = {0x0};
+	char startmode[16] = {0x0};
+	char *tmp;
+	
+	FILE *fp = fopen("/proc/stb/video/videomode_choices", "r");
+	
+	if(fp) {
+		fgets(videomodes, 256, fp);
+		fclose(fp);
+		tmp = SDL_strrchr(videomodes, '\n');
+		if (tmp) 
+			*tmp = '\0'; 
+		
+		/* test override */
+		if( (override) && (SDL_strlen(override) >= 4) &&
+				(SDL_strstr(videomodes, override) != NULL) ) {
+			SDL_strlcpy(startmode, override, 
+				    SDL_strlen(override)+1);
+#if DREAMBOX_DEBUG
+			fprintf(stderr, "DREAM: InitModes: found SDL_VIDEOMODE=%s\n", startmode);
+#endif
+		}
+		else {
+#if DREAMBOX_DEBUG
+		fprintf(stderr, "DREAM: InitModes: using default: %s\n", DREAM_InitVideoMode);
+#endif
+			SDL_strlcpy(startmode, DREAM_InitVideoMode, 
+				    SDL_strlen(DREAM_InitVideoMode)+1);
+		}
+
+	} else {
+		SDL_SetError("DREAM: i/o file /proc/stb/video/videomode_choices");
+		return -1;
+	}
+	
+	for (i = 0; i < _this->num_displays; i++) {
+		SDL_VideoDisplay *display = &_this->displays[i];
+		DREAM_GetDisplayModes(_this, display);
+
+		if (DREAM_SetVideoMode(_this, display, startmode) < 0) {
+			SDL_SetError("DREAM: InitModes: can not set mode");
+			return -1;
+		} else {
+#if DREAMBOX_DEBUG
+			fprintf(stderr, "DREAM: InitModes: ok\n");
+#endif
+			return 0;
+		}
+	}
+	SDL_SetError("DREAM: InitModes failed\n");
+	return -1;
 }
 
 void
@@ -225,16 +308,19 @@ DREAM_GetDisplayModes(_THIS, SDL_VideoDisplay * display)
 	char videomodes[256]={0x0};
 	SDL_DisplayMode mode;
 	SDL_DisplayModeData *modedata;
+	char *tmp;
 	
 	FILE *fp = fopen("/proc/stb/video/videomode_choices", "r");
 	
 	if(fp) {
-		fgets(videomodes,256,fp);
+		fgets(videomodes, 256, fp);
 		fclose(fp);
+		tmp = SDL_strrchr(videomodes, '\n');
+		if (tmp) 
+			*tmp = '\0';
+		
 		videomode = strtok(videomodes," ");
-#if DREAMBOX_DEBUG
-		fprintf(stderr, "DREAM: GetDisplayModes\n");
-#endif
+
 		while(videomode != NULL)
 		{
 			if (dreambox_get_displaymode_from_videomode(videomode, &mode)) {
@@ -247,7 +333,7 @@ DREAM_GetDisplayModes(_THIS, SDL_VideoDisplay * display)
 				
 				mode.driverdata = modedata;
 				SDL_strlcpy(modedata->videomode, videomode, SDL_strlen(videomode)+1);
-#if DREAMBOX_DEBUG
+#if DREAMBOX_MODES_DEBUG
 				fprintf(stderr,"DREAM: Videomode: %s\n", ((SDL_DisplayModeData*)mode.driverdata)->videomode );
 				fprintf(stderr,"DREAM: width: %d\n", mode.w);
 				fprintf(stderr,"DREAM: height: %d\n", mode.h);
@@ -269,12 +355,35 @@ DREAM_GetDisplayModes(_THIS, SDL_VideoDisplay * display)
 int
 DREAM_SetDisplayMode(_THIS, SDL_VideoDisplay * display, SDL_DisplayMode * mode)
 {
-#if DREAMBOX_DEBUG
-	fprintf(stderr, "DREAM: SetDisplayMode\n");
-#endif
-	dreambox_set_displaymode(&mode);
+	if (dreambox_set_displaymode(mode) < 0) {
+		return -1;
+	}
+	
+	display->current_mode = *mode;
 	
 	return 0;
+}
+
+int
+DREAM_SetVideoMode(_THIS, SDL_VideoDisplay * display, const char * vmode)
+{
+	unsigned int i;
+	SDL_DisplayMode mode;
+
+	if (!display->num_display_modes)
+		DREAM_GetDisplayModes(_this, display);
+	
+	for (i = 0; i < display->num_display_modes; ++i) {
+		mode = display->display_modes[i];
+		if ( SDL_strcmp( ((SDL_DisplayModeData*)mode.driverdata)->videomode, vmode ) == 0 )
+			/* mach mode here */
+			break;
+	}
+
+	if ( DREAM_SetDisplayMode(_this, display, &mode) == 0 )
+		return 0;
+		
+	return -1;
 }
 
 #endif /* SDL_VIDEO_DRIVER_DREAMBOX */

@@ -432,6 +432,8 @@ cmpmodes(const void *A, const void *B)
         return SDL_PIXELLAYOUT(b->format) - SDL_PIXELLAYOUT(a->format);
     } else if (a->refresh_rate != b->refresh_rate) {
         return b->refresh_rate - a->refresh_rate;
+    } else if (a->driverdata != b->driverdata) {
+        return b->driverdata - a->driverdata;
     }
     return 0;
 }

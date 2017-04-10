@@ -29,11 +29,13 @@
 
 
 /* Display helper functions */
-extern void dreambox_set_displaymode(SDL_DisplayMode *mode);
+extern void dreambox_show_window(SDL_bool show);
+extern int dreambox_get_videomode(char * dest);
+extern int dreambox_set_displaymode(SDL_DisplayMode * mode);
 
-void dreambox_free_display_modeData(SDL_DisplayMode * mode);
-void dreambox_set_framebuffer_resolution(int width, int height);
-void dreambox_set_videomode(const char *mode);
+void dreambox_free_display_mode_data(SDL_DisplayMode * mode);
+int dreambox_set_videomode(const char *vmode);
+int dreambox_set_framebuffer_resolution(int width, int height);
 int dreambox_get_displaymode_from_videomode(const char *vmode, SDL_DisplayMode *mode);
 
 /****************************************************************************/
@@ -43,7 +45,9 @@ int dreambox_get_displaymode_from_videomode(const char *vmode, SDL_DisplayMode *
 /* Display functions */
 extern void DREAM_GetDisplayModes(_THIS, SDL_VideoDisplay * display);
 extern int DREAM_SetDisplayMode(_THIS, SDL_VideoDisplay * display, SDL_DisplayMode * mode);
+extern int DREAM_InitModes(_THIS);
 extern void DREAM_QuitModes(_THIS);
+
 
 #endif
 
