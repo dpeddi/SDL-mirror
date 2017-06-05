@@ -60,6 +60,9 @@ static VideoBootStrap *bootstrap[] = {
 #if SDL_VIDEO_DRIVER_BCMFB
 	&BCMFB_bootstrap,
 #endif
+#if SDL_VIDEO_DRIVER_OLED
+	&OLED_bootstrap,
+#endif
 #if SDL_VIDEO_DRIVER_DIRECTFB
 	&DirectFB_bootstrap,
 #endif

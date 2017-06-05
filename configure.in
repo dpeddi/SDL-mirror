@@ -1279,6 +1279,19 @@ AC_HELP_STRING([--enable-video-bcmfb], [use framebuffer console video driver [[d
     fi
 }
 
+dnl Find OLED
+CheckOLED()
+{
+    AC_ARG_ENABLE(video-oled,
+AC_HELP_STRING([--enable-video-oled], [use oled video driver [[default=yes]]]),
+                  , enable_video_oled=yes)
+    if test x$enable_video_oled = xyes; then
+        AC_DEFINE(SDL_VIDEO_DRIVER_OLED)
+        SOURCES="$SOURCES $srcdir/src/video/oled/*.c"
+        have_video=yes
+    fi
+}
+
 dnl Find DirectFB
 CheckDirectFB()
 {
@@ -2391,6 +2404,7 @@ case "$host" in
         CheckNANOX
         CheckFBCON
         CheckBCMFB
+        CheckOLED
         CheckDirectFB
         CheckPS2GS
         CheckPS3
