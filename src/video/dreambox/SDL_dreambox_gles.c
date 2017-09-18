@@ -334,7 +334,7 @@ DREAM_EGL_CreateContext(_THIS, SDL_Window * window)
 		fprintf(stderr, "DREAM: Shading Version    : %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 	fprintf(stderr, "DREAM: Extensions         : %s\n", glGetString(GL_EXTENSIONS));
 #endif
-	DREAM_EGL_SetSwapInterval(_this,60);
+	DREAM_EGL_SetSwapInterval(_this, 1);
 	/* GL ES context was successfully created */
 	return wdata->gles_context;
 }
