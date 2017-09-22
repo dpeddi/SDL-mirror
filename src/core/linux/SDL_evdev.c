@@ -280,6 +280,8 @@ SDL_EVDEV_Poll(void)
                     }
                     
                     /* Probably keyboard */
+                    if (events[i].code == KEY_OK)
+                        events[i].code = KEY_ENTER;
                     scan_code = SDL_EVDEV_translate_keycode(events[i].code);
 #if SDL_VIDEO_DRIVER_DREAMBOX
                     if (item->is_dreamremote > 0) {}
