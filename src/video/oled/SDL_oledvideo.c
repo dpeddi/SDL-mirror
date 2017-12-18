@@ -182,7 +182,7 @@ int OLED_VideoInit(_THIS, SDL_PixelFormat *vformat)
 #ifdef OLED_DEBUG
 		printf("OLED_VideoInit: boxtype_name: %s", boxtype_name);
 #endif
-		if(SDL_strncmp(boxtype_name, "dm900", 5) == 0)
+		if( SDL_strncmp(boxtype_name, "dm900", 5) == 0 || SDL_strncmp(boxtype_name, "dm920", 5) == 0)
 		{
 			/* BGR_565_LE */
 			oled_type = DM900;
