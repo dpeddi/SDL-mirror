@@ -31,6 +31,8 @@
 
 static int posted = 0;
 static SDLKey KeyTranslate(unsigned short code, int type);
+int hasCap(unsigned char *caps, int bit);
+int isKeyboard(unsigned char *keyCaps);
 
 void BCMFB_InitOSKeymap(_THIS)
 {
@@ -70,9 +72,8 @@ void BCMFB_CloseKeyboard(_THIS)
 
 int BCMFB_OpenKeyboard(_THIS)
 {
-	unsigned char mask[EV_MAX/8 + 1];
+	unsigned char keyCaps[(KEY_MAX/8) + 1];
 	char device[64], name[128];
-	int type=0;
 	int fd, i, j;
 	
 	kbd_index = -1;
@@ -86,103 +87,87 @@ int BCMFB_OpenKeyboard(_THIS)
 	
 	for(i=0; i<32; i++ )
 	{
+		memset(name, 0, sizeof(name));
+		memset(device, 0, sizeof(device));
+		memset(keyCaps, 0, sizeof(keyCaps));
+		
 		snprintf(device, sizeof(device), "/dev/input/event%i", i);
 		if(access(device, R_OK)) continue;
-		fd = open(device, O_RDONLY);
+		fd = open(device, O_RDONLY|O_NONBLOCK);
 		if(fd<0)continue;
 
-		type=0;
-		name[0] = 0;
-
-        ioctl(fd, EVIOCGNAME(sizeof(name)), name);
-		ioctl(fd, EVIOCGBIT(0, sizeof(mask)), mask);
+		ioctl(fd, EVIOCGNAME(sizeof(name)), name);
+		ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keyCaps)), keyCaps);
 		close(fd);
 
-		for(j=0; j<EV_MAX; j++)
+		if (SDL_strncmp(name, "dreambox front panel", 20) == 0)
 		{
-			if(mask[(j)/8] & (1 << ((j)%8)))
+			if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
 			{
-				switch(j)
-				{
-					case EV_KEY: type |= 1; break;
-					case EV_REP: type |= 2;	break;
-					case EV_REL: type |= 4; break;
-					//case EV_LED: type |= 8; break;
-				}
+				SDL_SetError("Unable to open %s",name);
+			}
+
+			else {
+				panel = kbd_fd[kbd_index];
+#ifdef DEBUG_KEYBOARD
+				fprintf(stderr,"'%s' found %s\n",name,device);
+#endif
 			}
 		}
-		if(type==3)
+		else if (SDL_strncmp(name, "dreambox remote control", 23) == 0)
 		{
-			if (SDL_strncmp(name, "dreambox front panel", 20) == 0)
+			if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
 			{
-				if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
-				{
-					SDL_SetError("Unable to open %s",name);
-				}
-
-				else {
-					panel = kbd_fd[kbd_index];
-#ifdef DEBUG_KEYBOARD
-					fprintf(stderr,"'%s' found %s\n",name,device);
-#endif
-				}
+				SDL_SetError("Unable to open %s",name);
 			}
-			else if (SDL_strncmp(name, "dreambox remote control", 23) == 0)
-			{
-				if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
-				{
-					SDL_SetError("Unable to open %s",name);
-				}
-				else {
-					rc = kbd_fd[kbd_index];
+			else {
+				rc = kbd_fd[kbd_index];
 #ifdef DEBUG_KEYBOARD
-					fprintf(stderr,"'%s' found %s\n",name,device);
-#endif
-				}
-			}
-			else if (SDL_strncmp(name, "dreambox advanced remote control", 32) == 0 )
-			{
-				if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
-				{
-					SDL_SetError("Unable to open %s",name);
-				}
-				else {
-					arc = kbd_fd[kbd_index];
-#ifdef DEBUG_KEYBOARD
-					fprintf(stderr,"'%s' found %s\n",name,device);
-#endif
-				}
-			}
-			else if (SDL_strncmp(name, "dreambox ir keyboard", 20) == 0)
-			{
-				if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
-				{
-					SDL_SetError("Unable to open %s",name);
-				}
-
-				else {
-					kbd = kbd_fd[kbd_index];
-#ifdef DEBUG_KEYBOARD
-					fprintf(stderr,"'%s' found %s\n",name,device);
-#endif
-				}
-			}
-			else
-			{
-				if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
-				{
-					SDL_SetError("Unable to open %s",name);
-				}
-#ifdef DEBUG_KEYBOARD
-				else {
-					fprintf(stderr,"'USB: %s' found %s\n",name,device);
-				}
+				fprintf(stderr,"'%s' found %s\n",name,device);
 #endif
 			}
+		}
+		else if (SDL_strncmp(name, "dreambox advanced remote control", 32) == 0 )
+		{
+			if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
+			{
+				SDL_SetError("Unable to open %s",name);
+			}
+			else {
+				arc = kbd_fd[kbd_index];
+#ifdef DEBUG_KEYBOARD
+				fprintf(stderr,"'%s' found %s\n",name,device);
+#endif
+			}
+		}
+		else if (SDL_strncmp(name, "dreambox ir keyboard", 20) == 0)
+		{
+			if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
+			{
+				SDL_SetError("Unable to open %s",name);
+			}
+			else {
+				kbd = kbd_fd[kbd_index];
+#ifdef DEBUG_KEYBOARD
+				fprintf(stderr,"'%s' found %s\n",name,device);
+#endif
+			}
+		}
+		else if (isKeyboard(keyCaps))
+		{
+			if((kbd_fd[++kbd_index]=open(device, O_RDONLY|O_NONBLOCK)) == -1)
+			{
+				SDL_SetError("Unable to open %s",name);
+			}
+#ifdef DEBUG_KEYBOARD
+			else {
+				fprintf(stderr,"'USB: %s' found %s\n",name,device);
+			}
+#endif
 		}
 	}
 #ifdef DEBUG_KEYBOARD
-	for (i = 0; i < 32; i++) {
+	for (i = 0; i <= kbd_index; i++) {
 		if (kbd_fd[i] > -1) {
 			fprintf(stderr,"kbd_fd[%d] = %d\n",i,kbd_fd[i]);
 		}
@@ -718,4 +703,15 @@ static SDLKey KeyTranslate(unsigned short code, int type) {
 		
 		default:		return SDLK_UNKNOWN;
 	}
+}
+
+int hasCap(unsigned char *caps, int bit)
+{
+	return (caps[bit / 8] & (1 << (bit % 8)));
+}
+
+int isKeyboard(unsigned char *keyCaps)
+{
+	/* check whether the input device has KEY_A, in which case we assume it is a keyboard */
+	return hasCap(keyCaps, KEY_A);
 }
