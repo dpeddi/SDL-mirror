@@ -222,7 +222,7 @@ int BCMFB_OpenMouse(_THIS)
 				}
 			}
 		}
-		if(type==5)
+		if(type>=5)
 		{
 			if(SDL_strncmp(name, "dreambox ir mouse", 17) != 0 )
 			{
