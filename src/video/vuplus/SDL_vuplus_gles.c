@@ -228,28 +228,16 @@ VU_EGL_CreateContext(_THIS, SDL_Window * window)
 		return NULL;
 	}
 
-    VUGLES_GetDefaultNativeWindowInfo(&win_info);
+	VUGLES_GetDefaultNativeWindowInfo(&win_info);
+	win_info.width = 1280;
+	win_info.height = 720;
+	win_info.x = 0;
+	win_info.y = 0;
 
-    win_info.width = 1280;
-
-    win_info.height = 720;
-
-    win_info.x = 0;
-
-    win_info.y = 0;
-
-	//nativeWindow = (EGLNativeWindowType)0L;
-	//nativeWindow = GLES_Native_CreateNativeWindow();
 	nativeWindow = VUGLES_CreateNativeWindow(&win_info);
+	win_info.clientID = VUGLES_GetClientID(nativeWindow);
+	fprintf(stderr, "%26s #%d\n", "dvb_client", win_info.clientID);
 
-	    win_info.clientID = VUGLES_GetClientID(nativeWindow);
-
-    fprintf(stderr, "%26s ---------------\n", "--------------------------");
-
-    fprintf(stderr, "%26s #%d\n", "dvb_client", win_info.clientID);
-
-
-	
 	wdata->gles_surface = 
 		eglCreateWindowSurface(phdata->egl_display,
 			wdata->gles_configs[wdata->gles_config], 

@@ -222,13 +222,9 @@ VU_VideoInit(_THIS)
 	vuplus_get_videomode(VU_InitVideoMode);
 	vuplus_set_displaymode(&current_mode);
 
-	//GLES_Native_Init();
-	//GLES_Native_CreateNativeDisplay(&display);
 	VUGLES_InitPlatformAndDefaultDisplay(NULL, &aspect,
 			current_mode.w, current_mode.h);
-	//VUGLES_InitPlatform(NULL);
 
-	//VUGLES_RegisterDisplayPlatform(&vugles_handle);
 	VUGLES_RegisterDisplayPlatform(&display);
 	SDL_AddVideoDisplay(&display);
 	
@@ -291,14 +287,12 @@ VU_CreateWindow(_THIS, SDL_Window * window)
 		if (phdata->egl_display == EGL_NO_DISPLAY) {
 			
 			nativeDisplay = (EGLNativeDisplayType)0L;
-			//GLES_Native_CreateNativeDisplay(&nativeDisplay);
 			phdata->egl_display = eglGetDisplay(nativeDisplay);
 			
 			if (phdata->egl_display == EGL_NO_DISPLAY) {
 				return SDL_SetError("VU: Can't get connection to OpenGL ES");
 			}
 
-			//GLES_Native_CreateNativeWindow();
 			initstatus = eglInitialize(phdata->egl_display, NULL, NULL);
 			if (initstatus != EGL_TRUE) {
 				return SDL_SetError("VU: Can't init OpenGL ES library");
