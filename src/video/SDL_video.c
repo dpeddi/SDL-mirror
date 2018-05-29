@@ -93,6 +93,9 @@ static VideoBootStrap *bootstrap[] = {
 #if SDL_VIDEO_DRIVER_DREAMBOX
     &DREAM_bootstrap,
 #endif
+#if SDL_VIDEO_DRIVER_VUPLUS
+    &VU_bootstrap,
+#endif
 #if SDL_VIDEO_DRIVER_PANDORA
     &PND_bootstrap,
 #endif

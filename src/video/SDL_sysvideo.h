@@ -378,6 +378,7 @@ extern VideoBootStrap X11_bootstrap;
 extern VideoBootStrap MIR_bootstrap;
 extern VideoBootStrap DirectFB_bootstrap;
 extern VideoBootStrap DREAM_bootstrap;
+extern VideoBootStrap VU_bootstrap;
 extern VideoBootStrap WINDOWS_bootstrap;
 extern VideoBootStrap WINRT_bootstrap;
 extern VideoBootStrap HAIKU_bootstrap;

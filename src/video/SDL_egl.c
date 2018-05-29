@@ -48,7 +48,7 @@
 #define DEFAULT_OGL_ES_PVR "/opt/vc/lib/libGLES_CM.so"
 #define DEFAULT_OGL_ES "/opt/vc/lib/libGLESv1_CM.so"
 
-#elif SDL_VIDEO_DRIVER_ANDROID || SDL_VIDEO_DRIVER_VIVANTE || SDL_VIDEO_DRIVER_DREAMBOX
+#elif SDL_VIDEO_DRIVER_ANDROID || SDL_VIDEO_DRIVER_VIVANTE || SDL_VIDEO_DRIVER_DREAMBOX || SDL_VIDEO_DRIVER_VUPLUS
 /* Android */
 #define DEFAULT_EGL "libEGL.so"
 #define DEFAULT_OGL_ES2 "libGLESv2.so"
@@ -80,6 +80,10 @@ if (!_this->egl_data->NAME) \
 
 #ifndef DREAMBOX_DEBUG
 #define DREAMBOX_DEBUG 1
+#endif
+
+#ifndef VUPLUS_DEBUG
+#define VUPLUS_DEBUG 1
 #endif
 
 static const char * SDL_EGL_GetErrorName(EGLint eglErrorCode)
@@ -242,10 +246,16 @@ SDL_EGL_LoadLibrary(_THIS, const char *egl_path, NativeDisplayType native_displa
 #if DREAMBOX_DEBUG
             fprintf(stderr, "DREAM: gl_config.profile_mask: SDL_GL_CONTEXT_PROFILE_ES\n");
 #endif
+#if VUPLUS_DEBUG
+            fprintf(stderr, "VU: gl_config.profile_mask: SDL_GL_CONTEXT_PROFILE_ES\n");
+#endif
             if (_this->gl_config.major_version > 1) {
                 path = DEFAULT_OGL_ES2;
 #if DREAMBOX_DEBUG
                 fprintf(stderr, "DREAM: SDL_EGL_LoadLibrary: %s\n",path);
+#endif
+#if VUPLUS_DEBUG
+                fprintf(stderr, "VU: SDL_EGL_LoadLibrary: %s\n",path);
 #endif
                 egl_dll_handle = SDL_LoadObject(path);
             } else {
@@ -253,11 +263,17 @@ SDL_EGL_LoadLibrary(_THIS, const char *egl_path, NativeDisplayType native_displa
 #if DREAMBOX_DEBUG
                 fprintf(stderr, "DREAM: SDL_EGL_LoadLibrary: %s\n",path);
 #endif
+#if VUPLUS_DEBUG
+                fprintf(stderr, "VU: SDL_EGL_LoadLibrary: %s\n",path);
+#endif
                 egl_dll_handle = SDL_LoadObject(path);
                 if (egl_dll_handle == NULL) {
                     path = DEFAULT_OGL_ES_PVR;
 #if DREAMBOX_DEBUG
                     fprintf(stderr, "DREAM: SDL_EGL_LoadLibrary: %s\n",path);
+#endif
+#if VUPLUS_DEBUG
+                    fprintf(stderr, "VU: SDL_EGL_LoadLibrary: %s\n",path);
 #endif
                     egl_dll_handle = SDL_LoadObject(path);
                 }
@@ -291,6 +307,9 @@ SDL_EGL_LoadLibrary(_THIS, const char *egl_path, NativeDisplayType native_displa
         }
 #if DREAMBOX_DEBUG
         fprintf(stderr, "DREAM: SDL_EGL_LoadLibrary: %s\n",path);
+#endif
+#if VUPLUS_DEBUG
+        fprintf(stderr, "VU: SDL_EGL_LoadLibrary: %s\n",path);
 #endif
         dll_handle = SDL_LoadObject(path);
         if (dll_handle == NULL || SDL_LoadFunction(dll_handle, "eglChooseConfig") == NULL) {
