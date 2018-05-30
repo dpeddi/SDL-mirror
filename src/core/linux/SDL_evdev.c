@@ -62,6 +62,11 @@
 #define DREAMBOX_DEBUG 1
 #endif
 #endif /* SDL_VIDEO_DRIVER_DREAMBOX */
+#ifdef SDL_VIDEO_DRIVER_VUPLUS
+#ifndef VUPLUS_DEBUG
+#define VUPLUS_DEBUG 1
+#endif
+#endif /* SDL_VIDEO_DRIVER_VUPLUS */
 
 typedef struct SDL_evdevlist_item
 {
@@ -74,6 +79,9 @@ typedef struct SDL_evdevlist_item
 #if SDL_VIDEO_DRIVER_DREAMBOX
     int is_dreamremote;
 #endif /* SDL_VIDEO_DRIVER_DREAMBOX */
+#if SDL_VIDEO_DRIVER_VUPLUS
+    int is_vuremote;
+#endif /* SDL_VIDEO_DRIVER_VUPLUS */
     
     /* TODO: expand on this to have data for every possible class (mouse,
        keyboard, touchpad, etc.). Also there's probably some things in here we
@@ -271,6 +279,12 @@ SDL_EVDEV_Poll(void)
                         fprintf(stderr,"DREAM: BTN_MOUSE=%d SDL_MOUSE=%d is_dreamremote=%d (%s)\n", events[i].code, mouse_button, item->is_dreamremote, item->path);
 #endif
 #endif /* SDL_VIDEO_DRIVER_DREAMBOX */
+#if SDL_VIDEO_DRIVER_VUPLUS
+                        if (item->is_vuremote > 0) {}
+#if VUPLUS_DEBUG
+                        fprintf(stderr,"VU: BTN_MOUSE=%d SDL_MOUSE=%d is_vuremote=%d (%s)\n", events[i].code, mouse_button, item->is_vuremote, item->path);
+#endif
+#endif /* SDL_VIDEO_DRIVER_VUPLUS */
                         if (events[i].value == 0) {
                             SDL_SendMouseButton(mouse->focus, mouse->mouseID, SDL_RELEASED, EVDEV_MouseButtons[mouse_button]);
                         } else if (events[i].value == 1) {
@@ -301,6 +315,24 @@ SDL_EVDEV_Poll(void)
                         exit(0);
                     }
 #endif /* SDL_VIDEO_DRIVER_DREAMBOX */
+#if SDL_VIDEO_DRIVER_VUPLUS
+                    if (item->is_vuremote > 0) {}
+
+#if VUPLUS_DEBUG
+                    fprintf(stderr,"VU: EV_KEY=%d SDL_Key=%d is_vuremote=%d (%s)\n", events[i].code, scan_code, item->is_vuremote, item->path);
+#endif
+                    /* unsafe exit can cause Segmentation fault if app does not have SDL_QUIT implemented! */
+                    if ((events[i].code == KEY_TV) && (events[i].value == 1)) {
+#if VUPLUS_DEBUG
+                        fprintf(stderr,"VU: send SDL_Quit\n");
+#endif
+                        SDL_SendKeyboardKey(SDL_PRESSED, SDL_QUIT);
+                        SDL_VideoQuit();
+                        SDL_QuitSubSystem(SDL_INIT_EVERYTHING);
+                        SDL_Quit();
+                        exit(0);
+                    }
+#endif /* SDL_VIDEO_DRIVER_VUPLUS */
                     
                     if (scan_code != SDL_SCANCODE_UNKNOWN) {
                         if (events[i].value == 0) {
@@ -314,11 +346,16 @@ SDL_EVDEV_Poll(void)
                 case EV_ABS:
 #if SDL_VIDEO_DRIVER_DREAMBOX
                     if (item->is_dreamremote > 0) {}
-                    
 #if DREAMBOX_DEBUG
                     fprintf(stderr,"DREAM: EV_KEY=%d SDL_Key=%d is_dreamremote=%d (%s)\n", events[i].code, scan_code, item->is_dreamremote, item->path);
 #endif
 #endif /* SDL_VIDEO_DRIVER_DREAMBOX */
+#if SDL_VIDEO_DRIVER_VUPLUS
+                    if (item->is_vuremote > 0) {}
+#if VUPLUS_DEBUG
+                    fprintf(stderr,"VU: EV_KEY=%d SDL_Key=%d is_vuremote=%d (%s)\n", events[i].code, scan_code, item->is_vuremote, item->path);
+#endif
+#endif /* SDL_VIDEO_DRIVER_VUPLUS */
                     switch(events[i].code) {
                     case ABS_MT_SLOT:
                         if (!item->is_touchscreen) /* FIXME: temp hack */
@@ -374,6 +411,12 @@ SDL_EVDEV_Poll(void)
                         fprintf(stderr,"DREAM: REL_X=%d REL_Y=0 is_dreamremote=%d (%s)\n", events[i].value, item->is_dreamremote, item->path);
 #endif
 #endif /* SDL_VIDEO_DRIVER_DREAMBOX */
+#if SDL_VIDEO_DRIVER_VUPLUS
+                        if (item->is_vuremote > 0) {}
+#if VUPLUS_DEBUG
+                        fprintf(stderr,"VU: REL_X=%d REL_Y=0 is_vuremote=%d (%s)\n", events[i].value, item->is_vuremote, item->path);
+#endif
+#endif /* SDL_VIDEO_DRIVER_VUPLUS */
                         SDL_SendMouseMotion(mouse->focus, mouse->mouseID, SDL_TRUE, events[i].value, 0);
                         break;
                     case REL_Y:
@@ -383,6 +426,12 @@ SDL_EVDEV_Poll(void)
                         fprintf(stderr,"DREAM: REL_X=0 REL_Y=%d is_dreamremote=%d (%s)\n", events[i].value, item->is_dreamremote, item->path);
 #endif
 #endif /* SDL_VIDEO_DRIVER_DREAMBOX */
+#if SDL_VIDEO_DRIVER_VUPLUS
+                        if (item->is_vuremote > 0) {}
+#if VUPLUS_DEBUG
+                        fprintf(stderr,"VU: REL_X=0 REL_Y=%d is_vuremote=%d (%s)\n", events[i].value, item->is_vuremote, item->path);
+#endif
+#endif /* SDL_VIDEO_DRIVER_VUPLUS */
                         SDL_SendMouseMotion(mouse->focus, mouse->mouseID, SDL_TRUE, 0, events[i].value);
                         break;
                     case REL_WHEEL:
@@ -665,9 +714,9 @@ static int
 SDL_EVDEV_device_added(const char *dev_path, int udev_class)
 {
     int ret;
-#if SDL_VIDEO_DRIVER_DREAMBOX
+#if SDL_VIDEO_DRIVER_DREAMBOX || SDL_VIDEO_DRIVER_VUPLUS
     char name[256];
-#endif /* SDL_VIDEO_DRIVER_DREAMBOX */
+#endif /* SDL_VIDEO_DRIVER_DREAMBOX || SDL_VIDEO_DRIVER_VUPLUS */
     SDL_evdevlist_item *item;
 
     /* Check to make sure it's not already in list. */
@@ -736,7 +785,31 @@ SDL_EVDEV_device_added(const char *dev_path, int udev_class)
 #endif
     
 #endif /* SDL_VIDEO_DRIVER_DREAMBOX */
+#if SDL_VIDEO_DRIVER_VUPLUS
+
+    name[0] = 0;
+    item->is_vuremote = 0;
     
+    ioctl(item->fd, EVIOCGNAME (sizeof (name)), name);
+    
+    if (SDL_strncmp(name, "vu remote control", 17) == 0)
+        item->is_vuremote = 1;
+    
+    else if (SDL_strncmp(name, "vu advanced remote control", 26) == 0 )
+        item->is_vuremote = 2;
+    
+    else if (SDL_strncmp(name, "vu ir keyboard", 14) == 0)
+        item->is_vuremote = 3;
+    
+    else if (SDL_strncmp(name, "vu ir mouse", 11) == 0)
+        item->is_vuremote = 4;
+    
+#if VUPLUS_DEBUG
+        fprintf(stderr,"VU: add evdev '%s' %s\n", name, item->path);
+#endif
+    
+#endif /* SDL_VIDEO_DRIVER_VUPLUS */
+
     SDL_EVDEV_sync_device(item);
 
     return _this->num_devices++;
